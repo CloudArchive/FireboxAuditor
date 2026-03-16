@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profile>
+  <system-parameters>
+    <admin-users>
+      <user name="admin">
+        <password>readwrite</password>
+        <role>admin</role>
+      </user>
+      <user name="status">
+        <password>readonly</password>
+        <role>monitor</role>
+      </user>
+    </admin-users>
+  </system-parameters>
+
+  <policy-objects>
+    <alias-list>
+      <alias name="Any-External">
+        <member>0.0.0.0/0</member>
+      </alias>
+    </alias-list>
+  </policy-objects>
+
+  <policy-list>
+    <policy name="WatchGuard" type="filter" enabled="true">
+      <from><alias>Any-External</alias><alias>Any-Trusted</alias></from>
+      <to><alias>Firebox</alias></to>
+      <log enabled="true" for-report="true" log-message="true"/>
+    </policy>
+    <policy name="WatchGuard Web UI" type="filter" enabled="true">
+      <from><alias>Any-External</alias></from>
+      <to><alias>Firebox</alias></to>
+      <log enabled="true" for-report="true" log-message="true"/>
+    </policy>
+    <policy name="Outgoing" type="filter" enabled="true">
+      <from><alias>Any-Trusted</alias></from>
+      <to><alias>Any-External</alias></to>
+      <log enabled="false" for-report="false" log-message="false"/>
+    </policy>
+    <policy name="HTTP-proxy" type="proxy" enabled="true">
+      <from><alias>Any-Trusted</alias></from>
+      <to><alias>Any-External</alias></to>
+      <log enabled="true" for-report="true" log-message="true"/>
+    </policy>
+  </policy-list>
+
+  <security-services>
+    <gateway-av enabled="true"/>
+    <intrusion-prevention enabled="false"/>
+    <webblocker enabled="true"/>
+  </security-services>
+</profile>
