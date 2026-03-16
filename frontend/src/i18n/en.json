@@ -31,6 +31,23 @@
     "submit": "Connect & Audit",
     "loading": "Connecting..."
   },
+  "device": {
+    "title": "Device Information",
+    "model": "Model",
+    "serial": "Serial Number",
+    "firmware": "Firmware",
+    "systemName": "System Name",
+    "domain": "Domain",
+    "contact": "Contact",
+    "location": "Location",
+    "dns": "DNS Servers",
+    "interfaces": "Network Interfaces",
+    "ifName": "Name",
+    "ifType": "Type",
+    "ifDevice": "Device",
+    "ifIP": "IP Address",
+    "ifStatus": "Status"
+  },
   "severity": {
     "critical": "Critical",
     "high": "High",

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n } from './i18n/I18nContext'
 import ScoreGauge from './components/ScoreGauge'
 import AuditCard from './components/AuditCard'
+import DeviceInfoCard from './components/DeviceInfoCard'
 import ConnectionForm from './components/ConnectionForm'
 import UploadForm from './components/UploadForm'
 import LangSwitch from './components/LangSwitch'
@@ -121,6 +122,7 @@ export default function App() {
 
         {report && (
           <div className="space-y-10">
+            <DeviceInfoCard info={report.device_info} />
             <ScoreGauge score={report.score} />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('app.auditResults')}</h2>

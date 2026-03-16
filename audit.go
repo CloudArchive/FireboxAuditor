@@ -18,8 +18,9 @@ type AuditResult struct {
 }
 
 type AuditReport struct {
-	Score   int           `json:"score"`
-	Results []AuditResult `json:"results"`
+	DeviceInfo DeviceInfo    `json:"device_info"`
+	Score      int           `json:"score"`
+	Results    []AuditResult `json:"results"`
 }
 
 func RunAudit(cfg *WatchGuardConfig) AuditReport {
@@ -32,7 +33,11 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 	}
 
 	score := calculateScore(results)
-	return AuditReport{Score: score, Results: results}
+	return AuditReport{
+		DeviceInfo: ExtractDeviceInfo(cfg),
+		Score:      score,
+		Results:    results,
+	}
 }
 
 // Rule 1 (Critical): Default passwords

@@ -31,6 +31,23 @@
     "submit": "Bağlan ve Denetle",
     "loading": "Bağlanıyor..."
   },
+  "device": {
+    "title": "Cihaz Bilgileri",
+    "model": "Model",
+    "serial": "Seri Numarası",
+    "firmware": "Firmware",
+    "systemName": "Sistem Adı",
+    "domain": "Domain",
+    "contact": "İletişim",
+    "location": "Konum",
+    "dns": "DNS Sunucuları",
+    "interfaces": "Ağ Arayüzleri",
+    "ifName": "Ad",
+    "ifType": "Tip",
+    "ifDevice": "Cihaz",
+    "ifIP": "IP Adresi",
+    "ifStatus": "Durum"
+  },
   "severity": {
     "critical": "Kritik",
     "high": "Yüksek",
