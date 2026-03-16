@@ -26,6 +26,13 @@ func FetchConfigViaSSH(cfg SSHConfig) ([]byte, error) {
 		User: cfg.Username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(cfg.Password),
+			ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+				answers := make([]string, len(questions))
+				for i := range questions {
+					answers[i] = cfg.Password
+				}
+				return answers, nil
+			}),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         15 * time.Second,

@@ -3,3 +3,4 @@ static/*
 !static/.gitkeep
 frontend/node_modules/
 .env
+firebox-auditor
