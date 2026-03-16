@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -16,8 +17,6 @@ func TestAuditSampleConfig(t *testing.T) {
 	}
 	report := RunAudit(cfg)
 
-	// Sample config has: default passwords (-20), mgmt exposure (-20), outgoing active (-10),
-	// IPS+APT disabled (-10), outgoing no logging (-5) = 100-65 = 35
 	if report.Score > 50 {
 		t.Errorf("expected low score for insecure config, got %d", report.Score)
 	}
@@ -26,10 +25,19 @@ func TestAuditSampleConfig(t *testing.T) {
 	for _, r := range report.Results {
 		if !r.Passed {
 			failCount++
-			t.Logf("FAIL: %s (%s) - %s", r.Name, r.Severity, r.Description)
+			t.Logf("FAIL: %s (%s) details=%s", r.RuleID, r.Severity, strings.Join(r.Details, ", "))
 		}
 	}
 	if failCount == 0 {
 		t.Error("expected at least some failures")
+	}
+
+	// Verify no empty details entries (the comma bug)
+	for _, r := range report.Results {
+		for _, d := range r.Details {
+			if strings.TrimSpace(d) == "" {
+				t.Errorf("rule %s has empty detail entry", r.RuleID)
+			}
+		}
 	}
 }

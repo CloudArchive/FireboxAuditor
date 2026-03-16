@@ -1,0 +1,78 @@
+{
+  "app": {
+    "title": "Firebox Auditor",
+    "subtitle": "WatchGuard Configuration Security Audit",
+    "newAudit": "New Audit",
+    "selectMethod": "Select Audit Method",
+    "back": "Back",
+    "auditResults": "Audit Results",
+    "securityScore": "Security Score",
+    "scoreGood": "Good",
+    "scoreMedium": "Fair",
+    "scoreCritical": "Critical"
+  },
+  "upload": {
+    "title": "Upload XML Configuration",
+    "cardTitle": "Upload XML File",
+    "cardDesc": "Upload a previously exported .xml configuration file.",
+    "dropzone": "Click to select a file",
+    "dropzoneHint": "WatchGuard configuration file in .xml format",
+    "submit": "Upload & Audit",
+    "loading": "Analyzing..."
+  },
+  "ssh": {
+    "title": "SSH Connection",
+    "cardTitle": "Connect via CLI",
+    "cardDesc": "Connect to Firebox device via SSH and automatically retrieve configuration.",
+    "host": "IP Address",
+    "port": "Port",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Connect & Audit",
+    "loading": "Connecting..."
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium"
+  },
+  "status": {
+    "passed": "Passed",
+    "failed": "Failed"
+  },
+  "card": {
+    "howToFix": "How to Fix?"
+  },
+  "rules": {
+    "RULE-001": {
+      "name": "Default Password Check",
+      "descPass": "All administrator passwords have been changed from factory defaults.",
+      "descFail": "Accounts using default passwords detected: {{details}}. This poses unauthorized access risk to your device.",
+      "remediation": "Change the admin and status account passwords to strong, unique passwords via Firebox System Manager or Web UI."
+    },
+    "RULE-002": {
+      "name": "Management Interface Exposure",
+      "descPass": "Management interfaces are not accessible from external networks.",
+      "descFail": "Management policies exposed to external networks: {{details}}. Attackers can access your device's management panel over the internet.",
+      "remediation": "Remove 'Any-External' from the 'From' field of WatchGuard and WatchGuard Web UI policies. Restrict management access to trusted internal IPs only."
+    },
+    "RULE-003": {
+      "name": "Outgoing Traffic Policy",
+      "descPass": "Default 'Outgoing' policy is disabled or removed.",
+      "descFail": "The 'Outgoing' policy is active. This policy allows all TCP/UDP traffic from internal to external networks, opening the door to data exfiltration and malware communication.",
+      "remediation": "Disable the default 'Outgoing' policy and create specific rules allowing only necessary ports/protocols (HTTP, HTTPS, DNS, etc.)."
+    },
+    "RULE-004": {
+      "name": "Security Services Status",
+      "descPass": "Gateway AV, IPS, WebBlocker, and APT Blocker services are active.",
+      "descFail": "Disabled security services: {{details}}. Without these services, your device is unprotected against malware, attacks, and dangerous websites.",
+      "remediation": "Enable Gateway AntiVirus, IPS, WebBlocker, and APT Blocker from Firebox System Manager > Subscription Services. Check your license status."
+    },
+    "RULE-005": {
+      "name": "Policy Logging Check",
+      "descPass": "Logging is enabled on all policies.",
+      "descFail": "Policies with logging disabled: {{details}}. Without logs, detecting security events and performing forensic analysis becomes impossible.",
+      "remediation": "Edit each policy in Policy Manager and enable 'Send a log message' and 'Send a log message for reports' under Properties > Logging."
+    }
+  }
+}

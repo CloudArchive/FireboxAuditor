@@ -1,0 +1,78 @@
+{
+  "app": {
+    "title": "Firebox Auditor",
+    "subtitle": "WatchGuard Konfigürasyon Güvenlik Denetimi",
+    "newAudit": "Yeni Denetim",
+    "selectMethod": "Denetim Yöntemini Seçin",
+    "back": "Geri",
+    "auditResults": "Denetim Sonuçları",
+    "securityScore": "Güvenlik Skoru",
+    "scoreGood": "İyi",
+    "scoreMedium": "Orta",
+    "scoreCritical": "Kritik"
+  },
+  "upload": {
+    "title": "XML Konfigürasyon Yükle",
+    "cardTitle": "XML Dosya Yükle",
+    "cardDesc": "Daha önce dışa aktardığınız .xml konfigürasyon dosyasını yükleyin.",
+    "dropzone": "Dosya seçmek için tıklayın",
+    "dropzoneHint": ".xml formatında WatchGuard konfigürasyon dosyası",
+    "submit": "Yükle ve Denetle",
+    "loading": "Analiz Ediliyor..."
+  },
+  "ssh": {
+    "title": "SSH Bağlantısı",
+    "cardTitle": "CLI ile Bağlan",
+    "cardDesc": "SSH üzerinden Firebox cihazına bağlanıp konfigürasyonu otomatik alın.",
+    "host": "IP Adresi",
+    "port": "Port",
+    "username": "Kullanıcı Adı",
+    "password": "Şifre",
+    "submit": "Bağlan ve Denetle",
+    "loading": "Bağlanıyor..."
+  },
+  "severity": {
+    "critical": "Kritik",
+    "high": "Yüksek",
+    "medium": "Orta"
+  },
+  "status": {
+    "passed": "Geçti",
+    "failed": "Başarısız"
+  },
+  "card": {
+    "howToFix": "Nasıl Düzeltilir?"
+  },
+  "rules": {
+    "RULE-001": {
+      "name": "Varsayılan Şifre Kontrolü",
+      "descPass": "Tüm yönetici hesaplarının şifreleri fabrika ayarından değiştirilmiş.",
+      "descFail": "Varsayılan şifre kullanan hesaplar tespit edildi: {{details}}. Bu, cihazınıza yetkisiz erişim riski oluşturur.",
+      "remediation": "Firebox System Manager veya Web UI üzerinden admin ve status hesaplarının şifrelerini güçlü, benzersiz parolalarla değiştirin."
+    },
+    "RULE-002": {
+      "name": "Yönetim Arayüzü İfşası",
+      "descPass": "Yönetim arayüzleri dış ağdan erişime kapalı.",
+      "descFail": "Dış ağdan erişime açık yönetim politikaları: {{details}}. Saldırganlar cihazınızın yönetim paneline internet üzerinden erişebilir.",
+      "remediation": "WatchGuard ve WatchGuard Web UI politikalarının 'From' alanından 'Any-External' objesini kaldırın. Yönetim erişimini yalnızca güvenilir iç ağ IP'leriyle sınırlandırın."
+    },
+    "RULE-003": {
+      "name": "Outgoing (Giden Trafik) Politikası",
+      "descPass": "Varsayılan 'Outgoing' politikası devre dışı veya kaldırılmış.",
+      "descFail": "'Outgoing' politikası aktif durumda. Bu politika, iç ağdan dışarıya tüm TCP/UDP trafiğine izin verir ve veri sızıntısı, kötü amaçlı yazılım iletişimi gibi risklere kapı açar.",
+      "remediation": "Varsayılan 'Outgoing' politikasını devre dışı bırakın ve iç ağdan dışarıya yalnızca gerekli port/protokollere izin veren özel kurallar oluşturun (HTTP, HTTPS, DNS vb.)."
+    },
+    "RULE-004": {
+      "name": "Güvenlik Servisleri Durumu",
+      "descPass": "Gateway AV, IPS, WebBlocker ve APT Blocker servisleri aktif.",
+      "descFail": "Devre dışı güvenlik servisleri: {{details}}. Bu servisler olmadan cihazınız zararlı yazılım, saldırı ve tehlikeli web sitelerine karşı korumasız kalır.",
+      "remediation": "Firebox System Manager > Subscription Services bölümünden Gateway AntiVirus, IPS, WebBlocker ve APT Blocker'ı etkinleştirin. Lisans durumunuzu kontrol edin."
+    },
+    "RULE-005": {
+      "name": "Politika Loglama Kontrolü",
+      "descPass": "Tüm politikalarda loglama aktif.",
+      "descFail": "Loglama kapalı olan politikalar: {{details}}. Loglar olmadan güvenlik olaylarını tespit etmek ve adli analiz yapmak imkansız hale gelir.",
+      "remediation": "Policy Manager'da her bir politikayı düzenleyip 'Properties' > 'Logging' sekmesinden 'Send a log message' ve 'Send a log message for reports' seçeneklerini işaretleyin."
+    }
+  }
+}
