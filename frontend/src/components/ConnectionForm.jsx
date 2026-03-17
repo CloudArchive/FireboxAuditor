@@ -23,7 +23,7 @@ export default function ConnectionForm({ onSubmit, loading, onCancel }) {
         setSshLogs(result.logs)
       }
       
-      return { ok: resp.ok, ...result }
+      return { ok: resp.ok, action, ...result }
     })
   }
 

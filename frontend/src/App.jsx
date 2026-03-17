@@ -42,17 +42,19 @@ export default function App() {
         throw new Error(result.error)
       }
       
-      if (result.report) {
+      // result from ConnectionForm is { ok, data, logs, action }
+      const { data, action } = result
+
+      if (action === 'sysinfo' && data) {
+        setSysInfo(data)
+        setIsEnriching(false)
+      } else if (action === 'feature-key' && data) {
+        setFeatureKey(typeof data === 'string' ? data : JSON.stringify(data, null, 2))
+      } else if (result.report) {
         setReport(result.report)
-      } else if (result.data) {
-        if (result.data.system_name) {
-          setSysInfo(result.data)
-          setIsEnriching(false) // Close modal on success
-        } else {
-          setFeatureKey(result.data)
-        }
-      } else {
-        setReport(result)
+      } else if (data && !action) {
+        // Fallback or upload case
+        setReport(data)
       }
     } catch (e) {
       setError(e.message)
