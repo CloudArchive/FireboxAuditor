@@ -203,11 +203,20 @@ func handleSSHEnrich(c *gin.Context) {
 
 func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 	// Run sysinfo
-	sysOutput, logs, err := ExecuteSSHCommand(cfg, "sysinfo")
+	sysOutput, logs, err := ExecuteSSHCommand(cfg, "show sysinfo")
 	if err != nil {
 		return nil, logs, fmt.Errorf("sysinfo komutu başarısız: %w", err)
 	}
-	sysInfo := ParseSysInfo(sysOutput)
+	// Log raw output for debugging (truncated to 1000 chars)
+	rawSys := stripANSI(sysOutput)
+	if len(rawSys) > 1000 {
+		rawSys = rawSys[:1000] + "..."
+	}
+	logs = append(logs, fmt.Sprintf("[RAW sysinfo]\n%s", rawSys))
+
+	sysInfo := ParseSysInfo(stripSSHNoise(sysOutput))
+	logs = append(logs, fmt.Sprintf("[PARSED] serial=%q uptime=%q cpu=%q mem=%q",
+		sysInfo.SerialNumber, sysInfo.UpTime, sysInfo.CPUUsage, sysInfo.MemoryUsage))
 
 	// Run show feature-key
 	fkOutput, fkLogs, err := ExecuteSSHCommand(cfg, "show feature-key")
@@ -215,6 +224,12 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 	if err != nil {
 		// Feature key is optional — don't fail the whole enrichment
 		logs = append(logs, "[WARN] feature-key alınamadı: "+err.Error())
+	} else {
+		rawFK := stripANSI(fkOutput)
+		if len(rawFK) > 500 {
+			rawFK = rawFK[:500] + "..."
+		}
+		logs = append(logs, fmt.Sprintf("[RAW feature-key]\n%s", rawFK))
 	}
 
 	enrich := &EnrichData{

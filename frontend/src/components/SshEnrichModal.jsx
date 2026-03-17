@@ -42,7 +42,7 @@ export default function SshEnrichModal({ auditId, onEnriched, onSkip, initialVal
       }
 
       setSuccess(true)
-      setTimeout(() => onEnriched(data.enrichment), 1200)
+      setTimeout(() => onEnriched(data.enrichment, data.logs || []), 1200)
     } catch (err) {
       setError(t('enrich.errorPrefix') + ': ' + err.message)
     } finally {

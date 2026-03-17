@@ -90,17 +90,47 @@ func ExecuteSSHCommand(cfg SSHConfig, command string) (string, []string, error) 
 	}
 	defer session.Close()
 
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	session.Stdout = &stdout
-	session.Stderr = &stderr
-
-	log(fmt.Sprintf("Running command: %s", command))
-	if err := session.Run(command); err != nil {
-		return "", logs, fmt.Errorf("komut başarısız: %w (stderr: %s)", err, stderr.String())
+	// WatchGuard Fireware requires a PTY — it doesn't support non-interactive exec.
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+	if err := session.RequestPty("vt100", 40, 200, modes); err != nil {
+		return "", logs, fmt.Errorf("PTY isteği başarısız: %w", err)
 	}
 
-	return stdout.String(), logs, nil
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		return "", logs, fmt.Errorf("stdin pipe hatası: %w", err)
+	}
+
+	var outBuf bytes.Buffer
+	session.Stdout = &outBuf
+	session.Stderr = &outBuf
+
+	if err := session.Shell(); err != nil {
+		return "", logs, fmt.Errorf("shell başlatılamadı: %w", err)
+	}
+
+	// Wait briefly for the prompt, then send command + exit
+	time.Sleep(1 * time.Second)
+	log(fmt.Sprintf("Running command: %s", command))
+	fmt.Fprintf(stdin, "%s\n", command)
+	time.Sleep(2 * time.Second)
+	fmt.Fprintf(stdin, "exit\n")
+	stdin.Close()
+
+	// Wait for session to finish (or timeout)
+	done := make(chan error, 1)
+	go func() { done <- session.Wait() }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		log("Timeout: session sonlandırılıyor")
+	}
+
+	return outBuf.String(), logs, nil
 }
 
 // stripANSI removes ANSI/VT100 escape sequences from a string.

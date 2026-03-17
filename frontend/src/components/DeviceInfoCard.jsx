@@ -24,12 +24,21 @@ function SectionHeader({ icon, title, badge }) {
   )
 }
 
-function ConnectedBadge({ label, host, onReconnect, onDisconnect }) {
+function ConnectedBadge({ label, host, onReconnect, onDisconnect, onShowLogs }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
         ✓ {label}{host ? ` · ${host}` : ''}
       </span>
+      {onShowLogs && (
+        <button
+          onClick={onShowLogs}
+          title="SSH loglarını göster"
+          className="text-[10px] px-1.5 py-0.5 rounded bg-wg-headline/10 dark:bg-white/10 text-wg-headline dark:text-white/60 hover:bg-wg-headline/20 dark:hover:bg-white/20 transition font-mono border border-wg-headline/20 dark:border-white/10"
+        >
+          &gt;_
+        </button>
+      )}
       {onReconnect && (
         <button
           onClick={onReconnect}
@@ -126,7 +135,7 @@ function FeatureKeySection({ featureKey, t }) {
 
 /* ── Main Component ──────────────────────────────────────────────────────────── */
 
-export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onReconnect, onDisconnect }) {
+export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onReconnect, onDisconnect, onShowLogs }) {
   const { t } = useI18n()
 
   const hasEnrich = !!enrichment
@@ -193,6 +202,7 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onRe
             ? <ConnectedBadge
                 label={t('device.sshConnected')}
                 host={enrichment.ssh_host}
+                onShowLogs={onShowLogs}
                 onReconnect={onReconnect}
                 onDisconnect={onDisconnect}
               />

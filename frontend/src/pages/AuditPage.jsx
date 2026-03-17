@@ -6,6 +6,7 @@ import ScoreGauge from '../components/ScoreGauge'
 import AuditCard from '../components/AuditCard'
 import PolicyTable from '../components/PolicyTable'
 import SshEnrichModal from '../components/SshEnrichModal'
+import SshLogsModal from '../components/SshLogsModal'
 import LangSwitch from '../components/LangSwitch'
 import ThemeSwitch from '../components/ThemeSwitch'
 
@@ -15,6 +16,8 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
 
   const [showEnrich, setShowEnrich]         = useState(false)
   const [enrichment, setEnrichment]         = useState(auditRecord?.enrichment || null)
+  const [sshLogs, setSshLogs]               = useState([])
+  const [showLogs, setShowLogs]             = useState(false)
   const [highlightedIndices, setHighlighted] = useState([])
 
   const { report } = auditRecord
@@ -28,8 +31,9 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
       })
     : []
 
-  const handleEnriched = (newEnrichment) => {
+  const handleEnriched = (newEnrichment, logs = []) => {
     setEnrichment(newEnrichment)
+    setSshLogs(logs)
     setShowEnrich(false)
     onRecordUpdate?.({ ...auditRecord, enrichment: newEnrichment })
   }
@@ -41,6 +45,15 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
 
   return (
     <div className="min-h-screen hexagon-bg wg-watermark transition-colors relative">
+
+      {/* SSH Logs Modal */}
+      {showLogs && (
+        <SshLogsModal
+          logs={sshLogs}
+          host={enrichment?.ssh_host || ''}
+          onClose={() => setShowLogs(false)}
+        />
+      )}
 
       {/* SSH Enrich Modal */}
       {showEnrich && (
@@ -123,6 +136,7 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
               onEnrichRequest={() => setShowEnrich(true)}
               onReconnect={() => setShowEnrich(true)}
               onDisconnect={handleDisconnect}
+              onShowLogs={sshLogs.length > 0 ? () => setShowLogs(true) : undefined}
             />
           </div>
           <div className="flex flex-col gap-6">
