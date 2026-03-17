@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type Severity string
 
@@ -123,18 +126,55 @@ func checkSecurityServices(cfg *WatchGuardConfig) AuditResult {
 		Passed:   true,
 	}
 
-	ss := cfg.SecurityServices
-
-	check := func(name string, svc *ServiceGlobal) {
-		if svc == nil || (svc.Enabled != "true" && svc.Enabled != "1") {
-			r.Details = append(r.Details, name)
-		}
+	// Map proxy actions for quick lookup
+	proxyMap := make(map[string]ProxyAction)
+	for _, pa := range cfg.ProxyActionList.ProxyActions {
+		proxyMap[pa.Name] = pa
 	}
 
-	check("Gateway AntiVirus", ss.GatewayAV)
-	check("IPS", ss.IPS)
-	check("WebBlocker", ss.WebBlocker)
-	check("APT Blocker", ss.APTBlocker)
+	for i, policy := range cfg.PolicyList.Policies {
+		if policy.Enabled == "0" || policy.Enabled == "false" {
+			continue
+		}
+
+		var missing []string
+
+		// 1. Check IPS (Directly on policy)
+		if policy.IPSMonitor != "1" && policy.IPSMonitor != "true" {
+			missing = append(missing, "IPS")
+		}
+
+		// 2. Check Proxy Services (GAV, WebBlocker, APT Blocker)
+		if policy.Proxy != "" {
+			if pa, ok := proxyMap[policy.Proxy]; ok {
+				var gav, wb, apt string
+				if pa.HTTP != nil {
+					gav, wb, apt = pa.HTTP.GatewayAV, pa.HTTP.WebBlocker, pa.HTTP.APTBlocker
+				} else if pa.HTTPS != nil {
+					gav, wb, apt = pa.HTTPS.GatewayAV, pa.HTTPS.WebBlocker, pa.HTTPS.APTBlocker
+				} else if pa.TCP != nil {
+					gav, apt = pa.TCP.GatewayAV, pa.TCP.APTBlocker
+				}
+
+				if gav != "1" && gav != "true" {
+					missing = append(missing, "Gateway AntiVirus")
+				}
+				if wb != "1" && wb != "true" {
+					if pa.TCP == nil { // TCP proxy doesn't have WebBlocker
+						missing = append(missing, "WebBlocker")
+					}
+				}
+				if apt != "1" && apt != "true" {
+					missing = append(missing, "APT Blocker")
+				}
+			}
+		}
+
+		if len(missing) > 0 {
+			msg := fmt.Sprintf("[%d] %s: Eksik servisler (%s)", i+1, policy.Name, strings.Join(missing, ", "))
+			r.Details = append(r.Details, msg)
+		}
+	}
 
 	if len(r.Details) > 0 {
 		r.Passed = false

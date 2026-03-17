@@ -14,6 +14,7 @@ type WatchGuardConfig struct {
 	PolicyObjects    PolicyObjects     `xml:"policy-objects"`
 	PolicyList       PolicyList        `xml:"policy-list"`
 	SecurityServices SecurityServices  `xml:"security-services"`
+	ProxyActionList  ProxyActionList   `xml:"proxy-action-list"`
 }
 
 type SystemParameters struct {
@@ -206,22 +207,24 @@ type PolicyList struct {
 }
 
 type Policy struct {
-	Name        string       `xml:"name,attr"`
-	PolicyType  string       `xml:"type,attr"`
-	Enabled     string       `xml:"enabled,attr"`
-	From        PolicyFrom   `xml:"from"`
-	To          PolicyTo     `xml:"to"`
-	Service     string       `xml:"service,attr"`
+	Name        string       `xml:"name"`
+	PolicyType  string       `xml:"type"`
+	Enabled     string       `xml:"enable"`
+	From        PolicyFrom   `xml:"from-alias-list>alias"`
+	To          PolicyTo     `xml:"to-alias-list>alias"`
+	Service     string       `xml:"service"`
 	Logging     LogSettings  `xml:"log"`
-	ProxyAction *ProxyAction `xml:"proxy-action"`
+	Proxy       string       `xml:"proxy"`
+	IPSMonitor  string       `xml:"ips-monitor-enabled"`
+	AppAction   string       `xml:"app-action"`
 }
 
 type PolicyFrom struct {
-	Aliases []string `xml:"alias"`
+	Aliases []string `xml:",any"`
 }
 
 type PolicyTo struct {
-	Aliases []string `xml:"alias"`
+	Aliases []string `xml:",any"`
 }
 
 type LogSettings struct {
@@ -230,9 +233,34 @@ type LogSettings struct {
 	LogMessage string `xml:"log-message,attr"`
 }
 
+type ProxyActionList struct {
+	ProxyActions []ProxyAction `xml:"proxy-action"`
+}
+
 type ProxyAction struct {
-	Name     string    `xml:"name,attr"`
-	Services []Service `xml:"service"`
+	Name        string `xml:"proxy-name"`
+	Description string `xml:"proxy-description"`
+	Type        string `xml:"proxy-type-attr"`
+	HTTP        *HTTPProxyAction  `xml:"http"`
+	HTTPS       *HTTPSProxyAction `xml:"https"`
+	TCP         *TCPProxyAction   `xml:"tcp-udp"`
+}
+
+type HTTPProxyAction struct {
+	GatewayAV  string `xml:"gateway-av>enabled"`
+	WebBlocker string `xml:"webblocker>enabled"`
+	APTBlocker string `xml:"apt-blocker>enabled"`
+}
+
+type HTTPSProxyAction struct {
+	GatewayAV  string `xml:"gateway-av>enabled"`
+	WebBlocker string `xml:"webblocker>enabled"`
+	APTBlocker string `xml:"apt-blocker>enabled"`
+}
+
+type TCPProxyAction struct {
+	GatewayAV  string `xml:"gateway-av>enabled"`
+	APTBlocker string `xml:"apt-blocker>enabled"`
 }
 
 type Service struct {
