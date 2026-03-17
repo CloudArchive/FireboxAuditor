@@ -91,7 +91,7 @@ export default function ConnectionForm({ onSubmit, loading, onCancel }) {
             onClick={onCancel}
             className="w-full py-2 text-sm text-wg-body dark:text-wg-gray-light/40 hover:text-wg-red transition-colors"
           >
-            İptal Et
+            {t('ssh.cancel')}
           </button>
         )}
       </form>

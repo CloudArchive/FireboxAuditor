@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type SSHConfig struct {
@@ -41,6 +44,21 @@ func ExecuteSSHCommand(cfg SSHConfig, command string) (string, []string, error) 
 
 	log(fmt.Sprintf("Connecting to %s:%d...", cfg.Host, cfg.Port))
 
+	hostKeyCallback := ssh.InsecureIgnoreHostKey()
+	if home, err := os.UserHomeDir(); err == nil {
+		knownHostsPath := filepath.Join(home, ".ssh", "known_hosts")
+		if _, err := os.Stat(knownHostsPath); err == nil {
+			if cb, err := knownhosts.New(knownHostsPath); err == nil {
+				hostKeyCallback = cb
+				log("Using known_hosts for host key verification")
+			}
+		}
+	}
+	if hostKeyCallback == nil {
+		hostKeyCallback = ssh.InsecureIgnoreHostKey()
+		log("WARNING: No known_hosts file found, skipping host key verification")
+	}
+
 	sshConfig := &ssh.ClientConfig{
 		User: cfg.Username,
 		Auth: []ssh.AuthMethod{
@@ -54,7 +72,7 @@ func ExecuteSSHCommand(cfg SSHConfig, command string) (string, []string, error) 
 				return answers, nil
 			}),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hostKeyCallback,
 		Timeout:         15 * time.Second,
 	}
 

@@ -46,8 +46,19 @@ func main() {
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 
-	log.Printf("Firebox Auditor başlatılıyor: http://localhost:%s\n", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Sunucu başlatılamadı:", err)
+	tlsCert := os.Getenv("TLS_CERT")
+	tlsKey := os.Getenv("TLS_KEY")
+
+	if tlsCert != "" && tlsKey != "" {
+		log.Printf("Firebox Auditor başlatılıyor (TLS): https://localhost:%s\n", port)
+		if err := r.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
+			log.Fatal("Sunucu başlatılamadı:", err)
+		}
+	} else {
+		log.Printf("Firebox Auditor başlatılıyor: http://localhost:%s\n", port)
+		log.Println("UYARI: TLS aktif değil. TLS_CERT ve TLS_KEY ortam değişkenlerini ayarlayın.")
+		if err := r.Run(":" + port); err != nil {
+			log.Fatal("Sunucu başlatılamadı:", err)
+		}
 	}
 }

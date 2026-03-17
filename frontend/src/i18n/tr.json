@@ -63,6 +63,9 @@
   "card": {
     "howToFix": "Nasıl Düzeltilir?"
   },
+  "ssh.cancel": "İptal Et",
+  "ssh.enrichTitle": "SSH Bilgi Güncelleme",
+  "device.sshUpdate": "SSH ile Güncelle",
   "policyTable": {
     "title": "Güvenlik Polisi Görselleştirme",
     "order": "Sıra",

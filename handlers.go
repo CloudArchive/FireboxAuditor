@@ -24,9 +24,14 @@ func handleUpload(c *gin.Context) {
 	}
 	defer file.Close()
 
-	data, err := io.ReadAll(file)
+	const maxUploadSize = 10 << 20 // 10 MB
+	data, err := io.ReadAll(io.LimitReader(file, maxUploadSize))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Dosya okunamadı: " + err.Error()})
+		return
+	}
+	if int64(len(data)) >= maxUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dosya boyutu 10 MB sınırını aşıyor"})
 		return
 	}
 
@@ -104,7 +109,12 @@ func handleSSH(c *gin.Context) {
 		return
 	}
 
-	cfg, err := ParseConfig([]byte(output[startIdx:]))
+	xmlData := output[startIdx:]
+	if endIdx := strings.Index(xmlData, "</profile>"); endIdx != -1 {
+		xmlData = xmlData[:endIdx+len("</profile>")]
+	}
+
+	cfg, err := ParseConfig([]byte(xmlData))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "XML parse hatası: " + err.Error(),

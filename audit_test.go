@@ -17,7 +17,7 @@ func TestAuditSampleConfig(t *testing.T) {
 	}
 	report := RunAudit(cfg)
 
-	if report.Score > 50 {
+	if report.Score > 80 {
 		t.Errorf("expected low score for insecure config, got %d", report.Score)
 	}
 

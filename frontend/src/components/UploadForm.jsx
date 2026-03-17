@@ -15,7 +15,8 @@ export default function UploadForm({ onSubmit, loading }) {
     onSubmit(async () => {
       const resp = await fetch('/api/audit/upload', { method: 'POST', body: formData })
       const json = await resp.json()
-      return { ok: resp.ok, ...json }
+      if (!resp.ok) return { ok: false, error: json.error || 'Upload failed' }
+      return { ok: true, report: json }
     })
   }
 

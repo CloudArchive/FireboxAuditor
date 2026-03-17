@@ -52,9 +52,6 @@ export default function App() {
         setFeatureKey(typeof data === 'string' ? data : JSON.stringify(data, null, 2))
       } else if (result.report) {
         setReport(result.report)
-      } else if (data && !action) {
-        // Fallback or upload case
-        setReport(data)
       }
     } catch (e) {
       setError(e.message)
@@ -213,7 +210,7 @@ export default function App() {
               memory_usage: sysInfo?.memory_usage
             }} />
             {report && <ScoreGauge score={report.score} />}
-            
+
             {featureKey && (
               <div className="wg-card p-6 border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/10">
                 <h3 className="text-sm font-semibold text-wg-headline dark:text-white mb-3 uppercase tracking-wider">Feature Key</h3>
@@ -222,7 +219,7 @@ export default function App() {
                 </pre>
               </div>
             )}
-            <div>
+            {report && <div>
               <h2 className="text-lg font-medium text-wg-headline dark:text-white mb-4">
                 <span className="wg-accent mr-2">&gt;</span>
                 {t('app.auditResults')}
@@ -246,9 +243,9 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
 
-            {report.policies && (
+            {report?.policies && (
               <PolicyTable 
                 policies={report.policies} 
                 highlightedIndices={highlightedIndices} 
@@ -263,7 +260,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-wg-headline/80 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-xl animate-scale-in">
             <div className="flex justify-between items-center mb-4 px-2">
-              <h3 className="text-xl font-semibold text-white">SSH Bilgi Güncelleme</h3>
+              <h3 className="text-xl font-semibold text-white">{t('ssh.enrichTitle')}</h3>
               <button 
                 onClick={() => setIsEnriching(false)}
                 className="text-white/60 hover:text-white transition-colors"

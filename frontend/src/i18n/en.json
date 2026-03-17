@@ -63,6 +63,9 @@
   "card": {
     "howToFix": "How to Fix?"
   },
+  "ssh.cancel": "Cancel",
+  "ssh.enrichTitle": "SSH Info Update",
+  "device.sshUpdate": "Update via SSH",
   "policyTable": {
     "title": "Security Policy Visualization",
     "order": "Order",

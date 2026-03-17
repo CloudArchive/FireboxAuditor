@@ -46,7 +46,7 @@ export default function DeviceInfoCard({ info }) {
           title="Fetch missing info via SSH"
         >
           <span className="group-hover:animate-pulse">🔐</span>
-          SSH ile Güncelle
+          {t('device.sshUpdate')}
         </button>
       </div>
 

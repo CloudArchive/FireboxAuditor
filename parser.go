@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// Package-level compiled regex for serial number extraction
+var snRe = regexp.MustCompile(`SN\s+(\S+)`)
+
 // Top-level WatchGuard configuration
 type WatchGuardConfig struct {
 	XMLName          xml.Name          `xml:"profile" json:"-"`
@@ -111,7 +114,6 @@ func ExtractDeviceInfo(cfg *WatchGuardConfig) DeviceInfo {
 	}
 
 	// Extract serial number from IKE cert issuer
-	snRe := regexp.MustCompile(`SN\s+(\S+)`)
 	for _, cert := range cfg.SystemParameters.IKECerts {
 		if m := snRe.FindStringSubmatch(cert.Issuer); len(m) > 1 {
 			info.SerialNumber = m[1]

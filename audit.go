@@ -178,7 +178,7 @@ func checkSecurityServices(cfg *WatchGuardConfig) AuditResult {
 		}
 
 		if len(missing) > 0 {
-			msg := fmt.Sprintf("[%d] %s: Eksik servisler (%s)", i+1, policy.Name, strings.Join(missing, ", "))
+			msg := fmt.Sprintf("[%d] %s → %s", i+1, policy.Name, strings.Join(missing, ", "))
 			r.Details = append(r.Details, msg)
 		}
 	}
@@ -223,13 +223,17 @@ func calculateScore(results []AuditResult) int {
 		if r.Passed {
 			continue
 		}
+		findings := len(r.Details)
+		if findings == 0 {
+			findings = 1 // At least 1 finding if rule failed
+		}
 		switch r.Severity {
 		case Critical:
-			score -= 20
+			score -= min(findings*10, 30) // 10 per finding, max 30
 		case High:
-			score -= 10
+			score -= min(findings*3, 20) // 3 per finding, max 20
 		case Medium:
-			score -= 5
+			score -= min(findings*2, 10) // 2 per finding, max 10
 		}
 	}
 	if score < 0 {
