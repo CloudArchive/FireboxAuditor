@@ -203,10 +203,6 @@ function LoggingTab({ policy, t }) {
         <StatusBadge active={boolVal(log.enabled)} label={boolVal(log.enabled) ? t('policyDetail.on') : t('policyDetail.off')} />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-wg-headline dark:text-wg-gray-light">{t('policyDetail.logMessage')}</span>
-        <StatusBadge active={boolVal(log.log_message)} label={boolVal(log.log_message) ? t('policyDetail.on') : t('policyDetail.off')} />
-      </div>
-      <div className="flex items-center justify-between">
         <span className="text-sm text-wg-headline dark:text-wg-gray-light">{t('policyDetail.logReport')}</span>
         <StatusBadge active={boolVal(log.for_report)} label={boolVal(log.for_report) ? t('policyDetail.on') : t('policyDetail.off')} />
       </div>

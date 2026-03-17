@@ -43,11 +43,18 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		proxyMap[pa.Name] = pa
 	}
 
-	// Assign order and proxy services to policies
+	// Assign order, populate log settings and proxy services
 	for i := range cfg.PolicyList.Policies {
 		cfg.PolicyList.Policies[i].Order = i + 1
 
 		p := &cfg.PolicyList.Policies[i]
+
+		// Populate LogSettings from raw sibling XML fields
+		p.Logging = LogSettings{
+			Enabled:   p.LogRaw,
+			ForReport: p.LogForReport,
+		}
+
 		if p.Proxy != "" {
 			if pa, ok := proxyMap[p.Proxy]; ok {
 				p.ProxyServices = resolveProxyServices(pa, proxyMap, p.IPSMonitor)
@@ -92,42 +99,58 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 		ps.APTBlocker = boolVal(pa.HTTP.APTBlocker)
 
 	case pa.HTTPS != nil:
-		ps.GatewayAV = boolVal(pa.HTTPS.GatewayAV)
-		ps.WebBlocker = boolVal(pa.HTTPS.WebBlocker)
-		ps.APTBlocker = boolVal(pa.HTTPS.APTBlocker)
+		// HTTPS proxy redirects content inspection to an HTTP proxy action.
+		// Security services (GAV, APT, WebBlocker) live on that HTTP action.
+		if pa.HTTPS.RedirectTo != "" {
+			if sub, ok := proxyMap[pa.HTTPS.RedirectTo]; ok && sub.HTTP != nil {
+				ps.GatewayAV = boolVal(sub.HTTP.GatewayAV)
+				ps.APTBlocker = boolVal(sub.HTTP.APTBlocker)
+				ps.WebBlocker = sub.HTTP.WebBlocker != ""
+			}
+		}
+		// wb-inspect on HTTPS itself also signals WebBlocker
+		if boolVal(pa.HTTPS.WebBlockerInspect) {
+			ps.WebBlocker = true
+		}
 
 	case pa.TCP != nil:
-		// TCP-UDP proxy may redirect HTTP/HTTPS traffic to dedicated sub-proxy actions.
+		// TCP-UDP proxy redirects HTTP/HTTPS traffic to dedicated sub-proxy actions.
 		// Resolve each redirect and merge security service flags.
 		for _, rule := range pa.TCP.Redirects {
 			sub, ok := proxyMap[rule.Name]
 			if !ok {
 				continue
 			}
-			var gav, wb, apt string
-			if sub.HTTP != nil {
-				gav, wb, apt = sub.HTTP.GatewayAV, sub.HTTP.WebBlocker, sub.HTTP.APTBlocker
-			} else if sub.HTTPS != nil {
-				gav, wb, apt = sub.HTTPS.GatewayAV, sub.HTTPS.WebBlocker, sub.HTTPS.APTBlocker
-			} else {
-				continue
+			switch {
+			case sub.HTTP != nil:
+				if boolVal(sub.HTTP.GatewayAV) {
+					ps.GatewayAV = true
+				}
+				if sub.HTTP.WebBlocker != "" {
+					ps.WebBlocker = true
+				}
+				if boolVal(sub.HTTP.APTBlocker) {
+					ps.APTBlocker = true
+				}
+			case sub.HTTPS != nil:
+				// HTTPS sub-action — follow its redirect-to as well
+				if sub.HTTPS.RedirectTo != "" {
+					if httpSub, ok2 := proxyMap[sub.HTTPS.RedirectTo]; ok2 && httpSub.HTTP != nil {
+						if boolVal(httpSub.HTTP.GatewayAV) {
+							ps.GatewayAV = true
+						}
+						if httpSub.HTTP.WebBlocker != "" {
+							ps.WebBlocker = true
+						}
+						if boolVal(httpSub.HTTP.APTBlocker) {
+							ps.APTBlocker = true
+						}
+					}
+				}
+				if boolVal(sub.HTTPS.WebBlockerInspect) {
+					ps.WebBlocker = true
+				}
 			}
-			if boolVal(gav) {
-				ps.GatewayAV = true
-			}
-			if boolVal(wb) {
-				ps.WebBlocker = true
-			}
-			if boolVal(apt) {
-				ps.APTBlocker = true
-			}
-		}
-		// Also check direct TCP-level fields as fallback.
-		if boolVal(pa.TCP.GatewayAV) {
-			ps.GatewayAV = true
-		}
-		if boolVal(pa.TCP.APTBlocker) {
-			ps.APTBlocker = true
 		}
 	}
 
@@ -282,8 +305,7 @@ func checkLogging(cfg *WatchGuardConfig) AuditResult {
 			continue
 		}
 		if policy.Logging.Enabled != "true" && policy.Logging.Enabled != "1" &&
-			policy.Logging.ForReport != "true" && policy.Logging.ForReport != "1" &&
-			policy.Logging.LogMessage != "true" && policy.Logging.LogMessage != "1" {
+			policy.Logging.ForReport != "true" && policy.Logging.ForReport != "1" {
 			r.Details = append(r.Details, policy.Name)
 		}
 	}

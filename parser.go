@@ -230,7 +230,11 @@ type Policy struct {
 	From          PolicyFrom           `xml:"from-alias-list" json:"from"`
 	To            PolicyTo             `xml:"to-alias-list" json:"to"`
 	Service       string               `xml:"service" json:"service"`
-	Logging       LogSettings          `xml:"log" json:"logging"`
+	// Raw log fields parsed from XML sibling elements
+	LogRaw        string               `xml:"log" json:"-"`
+	LogForReport  string               `xml:"log-for-report" json:"-"`
+	// Logging is populated programmatically after parsing
+	Logging       LogSettings          `xml:"-" json:"logging"`
 	Proxy         string               `xml:"proxy" json:"proxy"`
 	IPSMonitor    string               `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
 	AppAction     string               `xml:"app-action" json:"app_action"`
@@ -246,10 +250,11 @@ type PolicyTo struct {
 	Aliases []string `xml:"alias" json:"aliases"`
 }
 
+// LogSettings holds policy logging state for JSON output.
+// Populated programmatically from raw XML fields, not directly via xml tags.
 type LogSettings struct {
-	Enabled    string `xml:"enabled,attr" json:"enabled"`
-	ForReport  string `xml:"for-report,attr" json:"for_report"`
-	LogMessage string `xml:"log-message,attr" json:"log_message"`
+	Enabled   string `json:"enabled"`
+	ForReport string `json:"for_report"`
 }
 
 type ProxyActionList struct {
@@ -266,21 +271,23 @@ type ProxyAction struct {
 }
 
 type HTTPProxyAction struct {
-	GatewayAV  string `xml:"gateway-av>enabled"`
-	WebBlocker string `xml:"webblocker>enabled"`
-	APTBlocker string `xml:"apt-blocker>enabled"`
+	// Gateway AntiVirus: <anti-virus><enabled>true</enabled>
+	GatewayAV  string `xml:"anti-virus>enabled"`
+	// APT Blocker: <apt-enabled>true</apt-enabled>
+	APTBlocker string `xml:"apt-enabled"`
+	// WebBlocker: <filter><helper-name>ProfileName</helper-name> — non-empty means configured
+	WebBlocker string `xml:"filter>helper-name"`
 }
 
 type HTTPSProxyAction struct {
-	GatewayAV  string `xml:"gateway-av>enabled"`
-	WebBlocker string `xml:"webblocker>enabled"`
-	APTBlocker string `xml:"apt-blocker>enabled"`
+	// HTTPS proxy redirects content inspection to an HTTP proxy action
+	RedirectTo string `xml:"redirect-to"`
+	// WebBlocker via Deep Packet Inspection: <wb-inspect websense="true">
+	WebBlockerInspect string `xml:"wb-inspect>websense"`
 }
 
 type TCPProxyAction struct {
-	GatewayAV   string            `xml:"gateway-av>enabled"`
-	APTBlocker  string            `xml:"apt-blocker>enabled"`
-	Redirects   []TCPRedirectRule `xml:"outgoing>protocols>rule"`
+	Redirects []TCPRedirectRule `xml:"outgoing>protocols>rule"`
 }
 
 // TCPRedirectRule maps a protocol pattern (http, ssl, ftp…) to a sub-proxy action name.

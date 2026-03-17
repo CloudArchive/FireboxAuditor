@@ -130,7 +130,6 @@
     "from": "Kaynak",
     "to": "Hedef",
     "logEnabled": "Loglama",
-    "logMessage": "Log Mesajı",
     "logReport": "Rapor İçin Log",
     "on": "Açık",
     "off": "Kapalı",
