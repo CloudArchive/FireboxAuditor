@@ -11,20 +11,13 @@ import ThemeSwitch from './components/ThemeSwitch'
 /* ── WatchGuard Logo SVG ──────────────────────────── */
 function WGLogo({ className = '' }) {
   return (
-    <svg viewBox="0 0 40 40" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Magnifying glass circle */}
-      <circle cx="18" cy="18" r="16" strokeWidth="3" className="stroke-wg-black dark:stroke-white" />
-      {/* "W" inside */}
-      <path
-        d="M9 12L12.5 26L16.5 16L20.5 26L24 12"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="stroke-wg-black dark:stroke-white"
+    <div className={`${className} flex items-center justify-center p-1.5 dark:bg-wg-gray-light/10 dark:backdrop-blur-sm rounded-xl transition-all duration-300`}>
+      <img 
+        src="/Icon_Magnifying_Glass.png" 
+        alt="WatchGuard" 
+        className="w-full h-full object-contain filter drop-shadow-sm"
       />
-      {/* Red handle */}
-      <line x1="30" y1="30" x2="38" y2="38" strokeWidth="4" strokeLinecap="round" stroke="#E81410" />
-    </svg>
+    </div>
   )
 }
 
@@ -64,10 +57,10 @@ export default function App() {
   return (
     <div className="min-h-screen hexagon-bg wg-watermark transition-colors relative">
       {/* ── Header ──────────────────────────────────── */}
-      <header className="border-b border-wg-gray-light dark:border-wg-headline/30 bg-white/90 dark:bg-wg-black/90 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <WGLogo className="w-10 h-10" />
+      <header className="border-b border-wg-gray-light dark:border-wg-headline/30 bg-white/95 dark:bg-wg-headline/90 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <WGLogo className="w-14 h-14" />
             <div>
               <h1 className="text-xl font-semibold text-wg-headline dark:text-white tracking-tight">
                 <span className="wg-accent mr-1">&gt;</span>
@@ -200,7 +193,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-wg-gray-light dark:border-wg-headline/20 py-6 mt-10">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <p className="text-xs text-wg-body dark:text-wg-gray-light/40">
-            © {new Date().getFullYear()} WatchGuard Technologies, Inc. All rights reserved.
+            © {new Date().getFullYear()} CloudArchive. All rights reserved.
           </p>
           <p className="text-xs text-wg-body/60 dark:text-wg-gray-light/30">
             Firebox Auditor v1.0
