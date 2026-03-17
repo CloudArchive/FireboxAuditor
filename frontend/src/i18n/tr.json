@@ -60,6 +60,16 @@
   "card": {
     "howToFix": "Nasıl Düzeltilir?"
   },
+  "policyTable": {
+    "title": "Güvenlik Polisi Görselleştirme",
+    "order": "Sıra",
+    "action": "Aksiyon",
+    "name": "Politika Adı",
+    "type": "Tip",
+    "from": "Kaynak",
+    "to": "Hedef",
+    "port": "Port / Servis"
+  },
   "rules": {
     "RULE-001": {
       "name": "Varsayılan Şifre Kontrolü",

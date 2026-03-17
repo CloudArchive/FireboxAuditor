@@ -24,6 +24,7 @@ type AuditReport struct {
 	DeviceInfo DeviceInfo    `json:"device_info"`
 	Score      int           `json:"score"`
 	Results    []AuditResult `json:"results"`
+	Policies   []Policy      `json:"policies"`
 }
 
 func RunAudit(cfg *WatchGuardConfig) AuditReport {
@@ -35,11 +36,17 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		checkLogging(cfg),
 	}
 
+	// Assign order to policies
+	for i := range cfg.PolicyList.Policies {
+		cfg.PolicyList.Policies[i].Order = i + 1
+	}
+
 	score := calculateScore(results)
 	return AuditReport{
 		DeviceInfo: ExtractDeviceInfo(cfg),
 		Score:      score,
 		Results:    results,
+		Policies:   cfg.PolicyList.Policies,
 	}
 }
 

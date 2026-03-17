@@ -7,6 +7,7 @@ import ConnectionForm from './components/ConnectionForm'
 import UploadForm from './components/UploadForm'
 import LangSwitch from './components/LangSwitch'
 import ThemeSwitch from './components/ThemeSwitch'
+import PolicyTable from './components/PolicyTable'
 
 /* ── WatchGuard Logo SVG ──────────────────────────── */
 function WGLogo({ className = '' }) {
@@ -27,6 +28,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [mode, setMode] = useState(null)
+  const [highlightedIndices, setHighlightedIndices] = useState([])
 
   const handleResult = async (fetchFn) => {
     setLoading(true)
@@ -179,12 +181,31 @@ export default function App() {
               </h2>
               <div className="space-y-4">
                 {sortedResults.map((r, i) => (
-                  <div key={r.rule_id} style={{ animationDelay: `${i * 60}ms` }}>
-                    <AuditCard result={r} />
+                  <div 
+                    key={r.rule_id} 
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    onClick={() => {
+                      const matches = r.details?.join(' ').match(/\[(\d+)\]/g) || []
+                      const indices = matches.map(m => parseInt(m.replace(/[\[\]]/g, '')))
+                      setHighlightedIndices(indices)
+                      if (indices.length > 0) {
+                        document.getElementById(`policy-row-${indices[0]}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <AuditCard result={r} isHighlighted={r.details?.some(d => highlightedIndices.some(idx => d.includes(`[${idx}]`)))} />
                   </div>
                 ))}
               </div>
             </div>
+
+            {report.policies && (
+              <PolicyTable 
+                policies={report.policies} 
+                highlightedIndices={highlightedIndices} 
+              />
+            )}
           </div>
         )}
       </main>

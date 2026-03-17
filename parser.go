@@ -8,13 +8,13 @@ import (
 
 // Top-level WatchGuard configuration
 type WatchGuardConfig struct {
-	XMLName          xml.Name          `xml:"profile"`
-	ForVersion       string            `xml:"for-version"`
-	SystemParameters SystemParameters  `xml:"system-parameters"`
-	PolicyObjects    PolicyObjects     `xml:"policy-objects"`
-	PolicyList       PolicyList        `xml:"policy-list"`
-	SecurityServices SecurityServices  `xml:"security-services"`
-	ProxyActionList  ProxyActionList   `xml:"proxy-action-list"`
+	XMLName          xml.Name          `xml:"profile" json:"-"`
+	ForVersion       string            `xml:"for-version" json:"for_version"`
+	SystemParameters SystemParameters  `xml:"system-parameters" json:"system_parameters"`
+	PolicyObjects    PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
+	PolicyList       PolicyList        `xml:"policy-list" json:"policy_list"`
+	SecurityServices SecurityServices  `xml:"security-services" json:"security_services"`
+	ProxyActionList  ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
 }
 
 type SystemParameters struct {
@@ -198,8 +198,8 @@ type PolicyObjects struct {
 }
 
 type Alias struct {
-	Name    string   `xml:"name,attr"`
-	Members []string `xml:"member"`
+	Name    string   `xml:"name,attr" json:"name"`
+	Members []string `xml:"member" json:"members"`
 }
 
 type PolicyList struct {
@@ -207,30 +207,31 @@ type PolicyList struct {
 }
 
 type Policy struct {
-	Name        string       `xml:"name"`
-	PolicyType  string       `xml:"type"`
-	Enabled     string       `xml:"enable"`
-	From        PolicyFrom   `xml:"from-alias-list>alias"`
-	To          PolicyTo     `xml:"to-alias-list>alias"`
-	Service     string       `xml:"service"`
-	Logging     LogSettings  `xml:"log"`
-	Proxy       string       `xml:"proxy"`
-	IPSMonitor  string       `xml:"ips-monitor-enabled"`
-	AppAction   string       `xml:"app-action"`
+	Order       int          `xml:"-" json:"order"`
+	Name        string       `xml:"name" json:"name"`
+	PolicyType  string       `xml:"type" json:"type"`
+	Enabled     string       `xml:"enable" json:"enabled"`
+	From        PolicyFrom   `xml:"from-alias-list" json:"from"`
+	To          PolicyTo     `xml:"to-alias-list" json:"to"`
+	Service     string       `xml:"service" json:"service"`
+	Logging     LogSettings  `xml:"log" json:"logging"`
+	Proxy       string       `xml:"proxy" json:"proxy"`
+	IPSMonitor  string       `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
+	AppAction   string       `xml:"app-action" json:"app_action"`
 }
 
 type PolicyFrom struct {
-	Aliases []string `xml:",any"`
+	Aliases []string `xml:"alias" json:"aliases"`
 }
 
 type PolicyTo struct {
-	Aliases []string `xml:",any"`
+	Aliases []string `xml:"alias" json:"aliases"`
 }
 
 type LogSettings struct {
-	Enabled    string `xml:"enabled,attr"`
-	ForReport  string `xml:"for-report,attr"`
-	LogMessage string `xml:"log-message,attr"`
+	Enabled    string `xml:"enabled,attr" json:"enabled"`
+	ForReport  string `xml:"for-report,attr" json:"for_report"`
+	LogMessage string `xml:"log-message,attr" json:"log_message"`
 }
 
 type ProxyActionList struct {

@@ -60,6 +60,16 @@
   "card": {
     "howToFix": "How to Fix?"
   },
+  "policyTable": {
+    "title": "Security Policy Visualization",
+    "order": "Order",
+    "action": "Action",
+    "name": "Policy Name",
+    "type": "Type",
+    "from": "From",
+    "to": "To",
+    "port": "Port / Service"
+  },
   "rules": {
     "RULE-001": {
       "name": "Default Password Check",
