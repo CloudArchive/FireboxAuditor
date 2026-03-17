@@ -1,19 +1,31 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
+import SshConsole from './SshConsole'
 
 export default function ConnectionForm({ onSubmit, loading }) {
   const { t } = useI18n()
   const [form, setForm] = useState({ host: '', port: '4118', username: 'admin', password: '' })
+  const [sshLogs, setSshLogs] = useState([])
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSubmit(() =>
-      fetch('/api/audit/ssh', {
+    setSshLogs([])
+    onSubmit(async () => {
+      const resp = await fetch('/api/audit/ssh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, port: parseInt(form.port, 10) }),
       })
-    )
+      
+      const result = await resp.json()
+      if (result.logs) {
+        setSshLogs(result.logs)
+      }
+      
+      // We still need to return the response to the parent onSubmit handler if it expects it
+      // or we can just return it for the sake of the caller.
+      return { ok: resp.ok, ...result }
+    })
   }
 
   const field = (labelKey, key, type = 'text', placeholder = '') => (
@@ -31,25 +43,29 @@ export default function ConnectionForm({ onSubmit, loading }) {
   )
 
   return (
-    <form onSubmit={handleSubmit} className="wg-card p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/20 wg-concrete space-y-5" id="ssh-form">
-      <h3 className="text-lg font-medium text-wg-headline dark:text-white">
-        <span className="wg-accent mr-1">&gt;</span>
-        {t('ssh.title')}
-      </h3>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">{field('ssh.host', 'host', 'text', '192.168.1.1')}</div>
-        {field('ssh.port', 'port', 'number')}
-      </div>
-      {field('ssh.username', 'username')}
-      {field('ssh.password', 'password', 'password')}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        id="ssh-submit"
-      >
-        {loading ? t('ssh.loading') : t('ssh.submit')}
-      </button>
-    </form>
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="wg-card p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/20 wg-concrete space-y-5" id="ssh-form">
+        <h3 className="text-lg font-medium text-wg-headline dark:text-white">
+          <span className="wg-accent mr-1">&gt;</span>
+          {t('ssh.title')}
+        </h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">{field('ssh.host', 'host', 'text', '192.168.1.1')}</div>
+          {field('ssh.port', 'port', 'number')}
+        </div>
+        {field('ssh.username', 'username')}
+        {field('ssh.password', 'password', 'password')}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          id="ssh-submit"
+        >
+          {loading ? t('ssh.loading') : t('ssh.submit')}
+        </button>
+      </form>
+
+      <SshConsole logs={sshLogs} visible={sshLogs.length > 0 || loading} />
+    </div>
   )
 }

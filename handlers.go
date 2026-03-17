@@ -46,18 +46,27 @@ func handleSSH(c *gin.Context) {
 		return
 	}
 
-	data, err := FetchConfigViaSSH(sshCfg)
+	data, logs, err := FetchConfigViaSSH(sshCfg)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"logs":  logs,
+		})
 		return
 	}
 
 	cfg, err := ParseConfig(data)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "XML parse hatası: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "XML parse hatası: " + err.Error(),
+			"logs":  logs,
+		})
 		return
 	}
 
 	report := RunAudit(cfg)
-	c.JSON(http.StatusOK, report)
+	c.JSON(http.StatusOK, gin.H{
+		"report": report,
+		"logs":   logs,
+	})
 }

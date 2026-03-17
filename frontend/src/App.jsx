@@ -35,12 +35,12 @@ export default function App() {
     setError(null)
     setReport(null)
     try {
-      const res = await fetchFn()
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Server error (${res.status})`)
+      const result = await fetchFn()
+      // result is now the actual parsed JSON or an object with ok/error/logs
+      if (!result.ok && result.error) {
+        throw new Error(result.error)
       }
-      setReport(await res.json())
+      setReport(result.report || result)
     } catch (e) {
       setError(e.message)
     } finally {
