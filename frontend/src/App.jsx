@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n } from './i18n/I18nContext'
 import ScoreGauge from './components/ScoreGauge'
 import AuditCard from './components/AuditCard'
