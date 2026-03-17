@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
 import SshConsole from './SshConsole'
 
-export default function ConnectionForm({ onSubmit, loading }) {
+export default function ConnectionForm({ onSubmit, loading, onCancel }) {
   const { t } = useI18n()
   const [form, setForm] = useState({ host: '', port: '4118', username: 'admin', password: '' })
   const [sshLogs, setSshLogs] = useState([])
@@ -85,6 +85,15 @@ export default function ConnectionForm({ onSubmit, loading }) {
             {loading && lastAction === 'audit' ? t('ssh.loading') : t('ssh.submit')}
           </button>
         </div>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-full py-2 text-sm text-wg-body dark:text-wg-gray-light/40 hover:text-wg-red transition-colors"
+          >
+            İptal Et
+          </button>
+        )}
       </form>
 
       <SshConsole logs={sshLogs} visible={sshLogs.length > 0 || loading} />

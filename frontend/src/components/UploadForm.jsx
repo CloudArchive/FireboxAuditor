@@ -12,9 +12,11 @@ export default function UploadForm({ onSubmit, loading }) {
     if (!file) return
     const formData = new FormData()
     formData.append('config', file)
-    onSubmit(() =>
-      fetch('/api/audit/upload', { method: 'POST', body: formData })
-    )
+    onSubmit(async () => {
+      const resp = await fetch('/api/audit/upload', { method: 'POST', body: formData })
+      const json = await resp.json()
+      return { ok: resp.ok, ...json }
+    })
   }
 
   return (

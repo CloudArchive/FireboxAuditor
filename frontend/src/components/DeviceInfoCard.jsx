@@ -33,13 +33,21 @@ export default function DeviceInfoCard({ info }) {
         <div className="w-9 h-9 rounded-lg bg-wg-red flex items-center justify-center text-white text-sm font-bold shadow-sm">
           {info.model?.[0] || 'F'}
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="font-medium text-wg-headline dark:text-white">
             <span className="wg-accent mr-1">&gt;</span>
             {t('device.title')}
           </h3>
           <p className="text-xs text-wg-body dark:text-wg-gray-light/50">WatchGuard {info.model} &mdash; {info.system_name}</p>
         </div>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-ssh-enrich'))}
+          className="px-3 py-1.5 rounded-md border border-wg-red/30 text-wg-red text-xs font-semibold hover:bg-wg-red hover:text-white transition-all flex items-center gap-2 group"
+          title="Fetch missing info via SSH"
+        >
+          <span className="group-hover:animate-pulse">🔐</span>
+          SSH ile Güncelle
+        </button>
       </div>
 
       <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">

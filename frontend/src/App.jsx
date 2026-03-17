@@ -31,6 +31,7 @@ export default function App() {
   const [highlightedIndices, setHighlightedIndices] = useState([])
   const [sysInfo, setSysInfo] = useState(null)
   const [featureKey, setFeatureKey] = useState(null)
+  const [isEnriching, setIsEnriching] = useState(false)
 
   const handleResult = async (fetchFn) => {
     setLoading(true)
@@ -46,6 +47,7 @@ export default function App() {
       } else if (result.data) {
         if (result.data.system_name) {
           setSysInfo(result.data)
+          setIsEnriching(false) // Close modal on success
         } else {
           setFeatureKey(result.data)
         }
@@ -58,6 +60,13 @@ export default function App() {
       setLoading(false)
     }
   }
+
+  // Handle enrichment event
+  useEffect(() => {
+    const handler = () => setIsEnriching(true)
+    window.addEventListener('open-ssh-enrich', handler)
+    return () => window.removeEventListener('open-ssh-enrich', handler)
+  }, [])
 
   const sortedResults = report?.results
     ? [...report.results].sort((a, b) => {
@@ -246,6 +255,29 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* SSH Enrichment Modal */}
+      {isEnriching && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-wg-headline/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-xl animate-scale-in">
+            <div className="flex justify-between items-center mb-4 px-2">
+              <h3 className="text-xl font-semibold text-white">SSH Bilgi Güncelleme</h3>
+              <button 
+                onClick={() => setIsEnriching(false)}
+                className="text-white/60 hover:text-white transition-colors"
+                id="close-enrich-btn"
+              >
+                ✕
+              </button>
+            </div>
+            <ConnectionForm 
+              onSubmit={handleResult} 
+              loading={loading} 
+              onCancel={() => setIsEnriching(false)} 
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Footer ──────────────────────────────────── */}
       <footer className="relative z-10 border-t border-wg-gray-light dark:border-wg-headline/20 py-6 mt-10">
