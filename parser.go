@@ -267,7 +267,7 @@ type ProxyAction struct {
 	Type        string `xml:"proxy-type-attr"`
 	HTTP        *HTTPProxyAction  `xml:"http"`
 	HTTPS       *HTTPSProxyAction `xml:"https"`
-	TCP         *TCPProxyAction   `xml:"tcp-udp"`
+	TCP         *TCPProxyAction   `xml:"outgoing"`
 }
 
 type HTTPProxyAction struct {
@@ -287,7 +287,7 @@ type HTTPSProxyAction struct {
 }
 
 type TCPProxyAction struct {
-	Redirects []TCPRedirectRule `xml:"outgoing>protocols>rule"`
+	Redirects []TCPRedirectRule `xml:"protocols>rule"`
 }
 
 // TCPRedirectRule maps a protocol pattern (http, ssl, ftp…) to a sub-proxy action name.
