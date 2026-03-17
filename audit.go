@@ -25,6 +25,7 @@ type AuditReport struct {
 	Score      int           `json:"score"`
 	Results    []AuditResult `json:"results"`
 	Policies   []Policy      `json:"policies"`
+	Aliases    []Alias       `json:"aliases"`
 }
 
 func RunAudit(cfg *WatchGuardConfig) AuditReport {
@@ -36,9 +37,35 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		checkLogging(cfg),
 	}
 
-	// Assign order to policies
+	// Map proxy actions for enrichment
+	proxyMap := make(map[string]ProxyAction)
+	for _, pa := range cfg.ProxyActionList.ProxyActions {
+		proxyMap[pa.Name] = pa
+	}
+
+	// Assign order and proxy services to policies
 	for i := range cfg.PolicyList.Policies {
 		cfg.PolicyList.Policies[i].Order = i + 1
+
+		p := &cfg.PolicyList.Policies[i]
+		if p.Proxy != "" {
+			if pa, ok := proxyMap[p.Proxy]; ok {
+				ps := &PolicyProxyServices{}
+				ps.IPS = p.IPSMonitor == "1" || p.IPSMonitor == "true"
+				var gav, wb, apt string
+				if pa.HTTP != nil {
+					gav, wb, apt = pa.HTTP.GatewayAV, pa.HTTP.WebBlocker, pa.HTTP.APTBlocker
+				} else if pa.HTTPS != nil {
+					gav, wb, apt = pa.HTTPS.GatewayAV, pa.HTTPS.WebBlocker, pa.HTTPS.APTBlocker
+				} else if pa.TCP != nil {
+					gav, apt = pa.TCP.GatewayAV, pa.TCP.APTBlocker
+				}
+				ps.GatewayAV = gav == "1" || gav == "true"
+				ps.WebBlocker = wb == "1" || wb == "true"
+				ps.APTBlocker = apt == "1" || apt == "true"
+				p.ProxyServices = ps
+			}
+		}
 	}
 
 	score := calculateScore(results)
@@ -47,6 +74,7 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		Score:      score,
 		Results:    results,
 		Policies:   cfg.PolicyList.Policies,
+		Aliases:    cfg.PolicyObjects.Aliases,
 	}
 }
 

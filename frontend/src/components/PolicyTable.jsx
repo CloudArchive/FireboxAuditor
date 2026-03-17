@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18nContext'
 
-export default function PolicyTable({ policies, highlightedIndices = [] }) {
+export default function PolicyTable({ policies, highlightedIndices = [], onSelectPolicy }) {
   const { t } = useI18n()
 
   const getActionIcon = (policy) => {
@@ -14,7 +14,7 @@ export default function PolicyTable({ policies, highlightedIndices = [] }) {
         <span className="bg-wg-red w-1.5 h-6 rounded-full"></span>
         {t('policyTable.title') || 'Firewall Policy Visualization'}
       </h2>
-      
+
       <div className="wg-card overflow-hidden border border-wg-gray-light dark:border-wg-headline/30 bg-white/80 dark:bg-wg-headline/10 backdrop-blur-md rounded-2xl shadow-xl shadow-wg-black/5">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -33,10 +33,11 @@ export default function PolicyTable({ policies, highlightedIndices = [] }) {
               {policies.map((policy) => {
                 const isHighlighted = highlightedIndices.includes(policy.order)
                 return (
-                  <tr 
-                    key={policy.order} 
+                  <tr
+                    key={policy.order}
                     id={`policy-row-${policy.order}`}
-                    className={`transition-all duration-300 ${isHighlighted ? 'bg-wg-red/10 dark:bg-wg-red/20 scale-[1.002] shadow-sm z-10' : 'hover:bg-wg-gray-light/5 dark:hover:bg-white/5'}`}
+                    onClick={() => onSelectPolicy?.(policy)}
+                    className={`transition-all duration-300 cursor-pointer ${isHighlighted ? 'bg-wg-red/10 dark:bg-wg-red/20 scale-[1.002] shadow-sm z-10' : 'hover:bg-wg-gray-light/5 dark:hover:bg-white/5'}`}
                   >
                     <td className="px-4 py-3.5 text-xs font-mono text-wg-body dark:text-wg-gray-light/60">{policy.order}</td>
                     <td className="px-4 py-3.5 text-lg">{getActionIcon(policy)}</td>

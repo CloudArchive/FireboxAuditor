@@ -118,6 +118,30 @@
     "to": "Hedef",
     "port": "Port / Servis"
   },
+  "policyDetail": {
+    "enabled": "Aktif",
+    "disabled": "Devre Dışı",
+    "name": "Politika Adı",
+    "type": "Tip",
+    "service": "Servis",
+    "proxy": "Proxy",
+    "description": "Açıklama",
+    "schedule": "Zamanlama",
+    "from": "Kaynak",
+    "to": "Hedef",
+    "logEnabled": "Loglama",
+    "logMessage": "Log Mesajı",
+    "logReport": "Rapor İçin Log",
+    "on": "Açık",
+    "off": "Kapalı",
+    "servicesDesc": "Bu politikaya bağlı proxy güvenlik servisleri",
+    "tab": {
+      "general": "Genel",
+      "connections": "Bağlantılar",
+      "logging": "Loglama",
+      "services": "Güvenlik Servisleri"
+    }
+  },
   "rules": {
     "RULE-001": {
       "name": "Varsayılan Şifre Kontrolü",

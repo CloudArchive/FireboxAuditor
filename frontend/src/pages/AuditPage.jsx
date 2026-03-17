@@ -5,6 +5,7 @@ import DeviceInfoCard from '../components/DeviceInfoCard'
 import ScoreGauge from '../components/ScoreGauge'
 import AuditCard from '../components/AuditCard'
 import PolicyTable from '../components/PolicyTable'
+import PolicyDetailPanel from '../components/PolicyDetailPanel'
 import SshEnrichModal from '../components/SshEnrichModal'
 import SshLogsModal from '../components/SshLogsModal'
 import LangSwitch from '../components/LangSwitch'
@@ -19,6 +20,7 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
   const [sshLogs, setSshLogs]               = useState([])
   const [showLogs, setShowLogs]             = useState(false)
   const [highlightedIndices, setHighlighted] = useState([])
+  const [selectedPolicy, setSelectedPolicy]   = useState(null)
 
   const { report } = auditRecord
   const deviceInfo  = report?.device_info || {}
@@ -172,9 +174,18 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
           <PolicyTable
             policies={report.policies}
             highlightedIndices={highlightedIndices}
+            onSelectPolicy={setSelectedPolicy}
           />
         )}
       </main>
+
+      {selectedPolicy && (
+        <PolicyDetailPanel
+          policy={selectedPolicy}
+          aliases={report?.aliases || []}
+          onClose={() => setSelectedPolicy(null)}
+        />
+      )}
     </div>
   )
 }

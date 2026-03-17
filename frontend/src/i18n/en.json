@@ -118,6 +118,30 @@
     "to": "To",
     "port": "Port / Service"
   },
+  "policyDetail": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "name": "Policy Name",
+    "type": "Type",
+    "service": "Service",
+    "proxy": "Proxy",
+    "description": "Description",
+    "schedule": "Schedule",
+    "from": "From",
+    "to": "To",
+    "logEnabled": "Logging",
+    "logMessage": "Log Message",
+    "logReport": "Log for Reports",
+    "on": "On",
+    "off": "Off",
+    "servicesDesc": "Proxy security services attached to this policy",
+    "tab": {
+      "general": "General",
+      "connections": "Connections",
+      "logging": "Logging",
+      "services": "Security Services"
+    }
+  },
   "rules": {
     "RULE-001": {
       "name": "Default Password Check",

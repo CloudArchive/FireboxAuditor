@@ -208,18 +208,34 @@ type PolicyList struct {
 	Policies []Policy `xml:"policy"`
 }
 
+type NATSettings struct {
+	Dynamic string `xml:"dynamic" json:"dynamic,omitempty"`
+	Static  string `xml:"static" json:"static,omitempty"`
+}
+
+type PolicyProxyServices struct {
+	GatewayAV  bool `json:"gateway_av"`
+	WebBlocker bool `json:"web_blocker"`
+	APTBlocker bool `json:"apt_blocker"`
+	IPS        bool `json:"ips"`
+}
+
 type Policy struct {
-	Order       int          `xml:"-" json:"order"`
-	Name        string       `xml:"name" json:"name"`
-	PolicyType  string       `xml:"type" json:"type"`
-	Enabled     string       `xml:"enable" json:"enabled"`
-	From        PolicyFrom   `xml:"from-alias-list" json:"from"`
-	To          PolicyTo     `xml:"to-alias-list" json:"to"`
-	Service     string       `xml:"service" json:"service"`
-	Logging     LogSettings  `xml:"log" json:"logging"`
-	Proxy       string       `xml:"proxy" json:"proxy"`
-	IPSMonitor  string       `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
-	AppAction   string       `xml:"app-action" json:"app_action"`
+	Order         int                  `xml:"-" json:"order"`
+	Name          string               `xml:"name" json:"name"`
+	PolicyType    string               `xml:"type" json:"type"`
+	Enabled       string               `xml:"enable" json:"enabled"`
+	Description   string               `xml:"description" json:"description"`
+	Schedule      string               `xml:"schedule" json:"schedule,omitempty"`
+	From          PolicyFrom           `xml:"from-alias-list" json:"from"`
+	To            PolicyTo             `xml:"to-alias-list" json:"to"`
+	Service       string               `xml:"service" json:"service"`
+	Logging       LogSettings          `xml:"log" json:"logging"`
+	Proxy         string               `xml:"proxy" json:"proxy"`
+	IPSMonitor    string               `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
+	AppAction     string               `xml:"app-action" json:"app_action"`
+	NAT           *NATSettings         `xml:"nat" json:"nat,omitempty"`
+	ProxyServices *PolicyProxyServices `xml:"-" json:"proxy_services,omitempty"`
 }
 
 type PolicyFrom struct {
