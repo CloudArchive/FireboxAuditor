@@ -6,15 +6,16 @@ export default function ConnectionForm({ onSubmit, loading }) {
   const { t } = useI18n()
   const [form, setForm] = useState({ host: '', port: '4118', username: 'admin', password: '' })
   const [sshLogs, setSshLogs] = useState([])
+  const [lastAction, setLastAction] = useState(null)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleAction = async (action) => {
+    setLastAction(action)
     setSshLogs([])
     onSubmit(async () => {
       const resp = await fetch('/api/audit/ssh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, port: parseInt(form.port, 10) }),
+        body: JSON.stringify({ ...form, port: parseInt(form.port, 10), action }),
       })
       
       const result = await resp.json()
@@ -22,10 +23,13 @@ export default function ConnectionForm({ onSubmit, loading }) {
         setSshLogs(result.logs)
       }
       
-      // We still need to return the response to the parent onSubmit handler if it expects it
-      // or we can just return it for the sake of the caller.
       return { ok: resp.ok, ...result }
     })
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    handleAction('audit')
   }
 
   const field = (labelKey, key, type = 'text', placeholder = '') => (
@@ -55,14 +59,32 @@ export default function ConnectionForm({ onSubmit, loading }) {
         </div>
         {field('ssh.username', 'username')}
         {field('ssh.password', 'password', 'password')}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          id="ssh-submit"
-        >
-          {loading ? t('ssh.loading') : t('ssh.submit')}
-        </button>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleAction('sysinfo')}
+            className="flex-1 py-3 rounded-md border border-wg-body/20 dark:border-wg-headline/50 text-wg-headline dark:text-white font-medium hover:bg-wg-gray-light dark:hover:bg-wg-headline/40 transition active:scale-95 disabled:opacity-50"
+          >
+            {loading && lastAction === 'sysinfo' ? '...' : 'SysInfo'}
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleAction('feature-key')}
+            className="flex-1 py-3 rounded-md border border-wg-body/20 dark:border-wg-headline/50 text-wg-headline dark:text-white font-medium hover:bg-wg-gray-light dark:hover:bg-wg-headline/40 transition active:scale-95 disabled:opacity-50"
+          >
+            {loading && lastAction === 'feature-key' ? '...' : 'Feature Key'}
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-[2] py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition active:scale-95 disabled:opacity-50"
+            id="ssh-submit"
+          >
+            {loading && lastAction === 'audit' ? t('ssh.loading') : t('ssh.submit')}
+          </button>
+        </div>
       </form>
 
       <SshConsole logs={sshLogs} visible={sshLogs.length > 0 || loading} />

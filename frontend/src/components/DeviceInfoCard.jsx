@@ -14,6 +14,9 @@ export default function DeviceInfoCard({ info }) {
     { label: t('device.contact'), value: info.contact || '-' },
     { label: t('device.location'), value: info.location || '-' },
     { label: t('device.dns'), value: (info.dns_servers || []).join(', ') || '-' },
+    { label: t('device.uptime'), value: info.up_time || '-' },
+    { label: t('device.cpu'), value: info.cpu_usage || '-' },
+    { label: t('device.memory'), value: info.memory_usage || '-' },
   ]
 
   const typeColors = {

@@ -29,18 +29,29 @@ export default function App() {
   const [error, setError] = useState(null)
   const [mode, setMode] = useState(null)
   const [highlightedIndices, setHighlightedIndices] = useState([])
+  const [sysInfo, setSysInfo] = useState(null)
+  const [featureKey, setFeatureKey] = useState(null)
 
   const handleResult = async (fetchFn) => {
     setLoading(true)
     setError(null)
-    setReport(null)
     try {
       const result = await fetchFn()
-      // result is now the actual parsed JSON or an object with ok/error/logs
       if (!result.ok && result.error) {
         throw new Error(result.error)
       }
-      setReport(result.report || result)
+      
+      if (result.report) {
+        setReport(result.report)
+      } else if (result.data) {
+        if (result.data.system_name) {
+          setSysInfo(result.data)
+        } else {
+          setFeatureKey(result.data)
+        }
+      } else {
+        setReport(result)
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -76,7 +87,13 @@ export default function App() {
             <LangSwitch />
             {report && (
               <button
-                onClick={() => { setReport(null); setMode(null); setError(null) }}
+                onClick={() => { 
+                  setReport(null); 
+                  setMode(null); 
+                  setError(null);
+                  setSysInfo(null);
+                  setFeatureKey(null);
+                }}
                 className="ml-2 text-sm px-4 py-2 rounded-md border border-wg-red text-wg-red hover:bg-wg-red hover:text-white transition-colors duration-200 font-medium"
                 id="new-audit-btn"
               >
@@ -170,10 +187,30 @@ export default function App() {
         )}
 
         {/* Results */}
-        {report && (
+        {(report || sysInfo) && (
           <div className="space-y-10 animate-fade-in">
-            <DeviceInfoCard info={report.device_info} />
-            <ScoreGauge score={report.score} />
+            <DeviceInfoCard info={{
+              ...(report?.device_info || {}),
+              model: sysInfo?.model || report?.device_info?.model,
+              serial_number: sysInfo?.serial_number || report?.device_info?.serial_number,
+              firmware_version: sysInfo?.version || report?.device_info?.firmware_version,
+              system_name: sysInfo?.system_name || report?.device_info?.system_name,
+              contact: sysInfo?.contact || report?.device_info?.contact,
+              location: sysInfo?.location || report?.device_info?.location,
+              up_time: sysInfo?.up_time,
+              cpu_usage: sysInfo?.cpu_usage,
+              memory_usage: sysInfo?.memory_usage
+            }} />
+            {report && <ScoreGauge score={report.score} />}
+            
+            {featureKey && (
+              <div className="wg-card p-6 border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/10">
+                <h3 className="text-sm font-semibold text-wg-headline dark:text-white mb-3 uppercase tracking-wider">Feature Key</h3>
+                <pre className="text-xs font-mono text-wg-body dark:text-wg-gray-light/70 bg-black/5 dark:bg-black/20 p-4 rounded overflow-auto max-h-60 leading-relaxed capitalize whitespace-pre-wrap">
+                  {featureKey}
+                </pre>
+              </div>
+            )}
             <div>
               <h2 className="text-lg font-medium text-wg-headline dark:text-white mb-4">
                 <span className="wg-accent mr-2">&gt;</span>

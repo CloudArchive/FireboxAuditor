@@ -46,7 +46,10 @@
     "ifType": "Tip",
     "ifDevice": "Cihaz",
     "ifIP": "IP Adresi",
-    "ifStatus": "Durum"
+    "ifStatus": "Durum",
+    "uptime": "Çalışma Süresi",
+    "cpu": "CPU Kullanımı",
+    "memory": "Bellek Kullanımı"
   },
   "severity": {
     "critical": "Kritik",

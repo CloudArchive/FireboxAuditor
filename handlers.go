@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,13 +41,30 @@ func handleUpload(c *gin.Context) {
 }
 
 func handleSSH(c *gin.Context) {
-	var sshCfg SSHConfig
-	if err := c.ShouldBindJSON(&sshCfg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz bağlantı bilgileri: " + err.Error()})
+	var req struct {
+		SSHConfig
+		Action string `json:"action"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz istek: " + err.Error()})
 		return
 	}
 
-	data, logs, err := FetchConfigViaSSH(sshCfg)
+	command := ""
+	switch req.Action {
+	case "sysinfo":
+		command = "sysinfo"
+	case "audit":
+		// Try both documented and undocumented export commands
+		command = "export config to console"
+	case "feature-key":
+		command = "show feature-key"
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz aksiyon"})
+		return
+	}
+
+	output, logs, err := ExecuteSSHCommand(req.SSHConfig, command)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -55,7 +73,38 @@ func handleSSH(c *gin.Context) {
 		return
 	}
 
-	cfg, err := ParseConfig(data)
+	if req.Action == "sysinfo" {
+		sysInfo := ParseSysInfo(output)
+		c.JSON(http.StatusOK, gin.H{
+			"data": sysInfo,
+			"logs": logs,
+		})
+		return
+	}
+
+	if req.Action == "feature-key" {
+		c.JSON(http.StatusOK, gin.H{
+			"data": output, // Return raw for now, can parse later if needed
+			"logs": logs,
+		})
+		return
+	}
+
+	// Default to audit/config fetch
+	startIdx := strings.Index(output, "<?xml")
+	if startIdx == -1 {
+		startIdx = strings.Index(output, "<profile")
+	}
+
+	if startIdx == -1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Konfigürasyon verisi bulunamadı. Cihazınız 'export config to console' komutunu desteklemiyor olabilir.",
+			"logs":  logs,
+		})
+		return
+	}
+
+	cfg, err := ParseConfig([]byte(output[startIdx:]))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "XML parse hatası: " + err.Error(),

@@ -46,7 +46,10 @@
     "ifType": "Type",
     "ifDevice": "Device",
     "ifIP": "IP Address",
-    "ifStatus": "Status"
+    "ifStatus": "Status",
+    "uptime": "Uptime",
+    "cpu": "CPU Usage",
+    "memory": "Memory Usage"
   },
   "severity": {
     "critical": "Critical",
