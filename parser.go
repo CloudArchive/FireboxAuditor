@@ -278,8 +278,15 @@ type HTTPSProxyAction struct {
 }
 
 type TCPProxyAction struct {
-	GatewayAV  string `xml:"gateway-av>enabled"`
-	APTBlocker string `xml:"apt-blocker>enabled"`
+	GatewayAV   string            `xml:"gateway-av>enabled"`
+	APTBlocker  string            `xml:"apt-blocker>enabled"`
+	Redirects   []TCPRedirectRule `xml:"outgoing>protocols>rule"`
+}
+
+// TCPRedirectRule maps a protocol pattern (http, ssl, ftp…) to a sub-proxy action name.
+type TCPRedirectRule struct {
+	Name    string `xml:"name"`    // e.g. "HTTP-Client.Arda"
+	Pattern string `xml:"pattern"` // e.g. "http", "ssl"
 }
 
 type Service struct {

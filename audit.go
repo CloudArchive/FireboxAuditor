@@ -50,20 +50,7 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		p := &cfg.PolicyList.Policies[i]
 		if p.Proxy != "" {
 			if pa, ok := proxyMap[p.Proxy]; ok {
-				ps := &PolicyProxyServices{}
-				ps.IPS = p.IPSMonitor == "1" || p.IPSMonitor == "true"
-				var gav, wb, apt string
-				if pa.HTTP != nil {
-					gav, wb, apt = pa.HTTP.GatewayAV, pa.HTTP.WebBlocker, pa.HTTP.APTBlocker
-				} else if pa.HTTPS != nil {
-					gav, wb, apt = pa.HTTPS.GatewayAV, pa.HTTPS.WebBlocker, pa.HTTPS.APTBlocker
-				} else if pa.TCP != nil {
-					gav, apt = pa.TCP.GatewayAV, pa.TCP.APTBlocker
-				}
-				ps.GatewayAV = gav == "1" || gav == "true"
-				ps.WebBlocker = wb == "1" || wb == "true"
-				ps.APTBlocker = apt == "1" || apt == "true"
-				p.ProxyServices = ps
+				p.ProxyServices = resolveProxyServices(pa, proxyMap, p.IPSMonitor)
 			}
 		}
 	}
@@ -76,6 +63,75 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		Policies:   cfg.PolicyList.Policies,
 		Aliases:    cfg.PolicyObjects.Aliases,
 	}
+}
+
+// hasHTTPRedirect reports whether a TCP proxy action redirects any traffic to an HTTP/HTTPS sub-proxy.
+func hasHTTPRedirect(tcp *TCPProxyAction) bool {
+	for _, r := range tcp.Redirects {
+		if r.Pattern == "http" || r.Pattern == "ssl" {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveProxyServices extracts security service flags for a policy's proxy action.
+// For TCP-UDP proxy actions it follows the redirect rules to HTTP/HTTPS sub-actions
+// and OR-combines their security service flags (if any sub-action has it enabled → true).
+func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMonitor string) *PolicyProxyServices {
+	ps := &PolicyProxyServices{
+		IPS: ipsMonitor == "1" || ipsMonitor == "true",
+	}
+
+	boolVal := func(s string) bool { return s == "1" || s == "true" }
+
+	switch {
+	case pa.HTTP != nil:
+		ps.GatewayAV = boolVal(pa.HTTP.GatewayAV)
+		ps.WebBlocker = boolVal(pa.HTTP.WebBlocker)
+		ps.APTBlocker = boolVal(pa.HTTP.APTBlocker)
+
+	case pa.HTTPS != nil:
+		ps.GatewayAV = boolVal(pa.HTTPS.GatewayAV)
+		ps.WebBlocker = boolVal(pa.HTTPS.WebBlocker)
+		ps.APTBlocker = boolVal(pa.HTTPS.APTBlocker)
+
+	case pa.TCP != nil:
+		// TCP-UDP proxy may redirect HTTP/HTTPS traffic to dedicated sub-proxy actions.
+		// Resolve each redirect and merge security service flags.
+		for _, rule := range pa.TCP.Redirects {
+			sub, ok := proxyMap[rule.Name]
+			if !ok {
+				continue
+			}
+			var gav, wb, apt string
+			if sub.HTTP != nil {
+				gav, wb, apt = sub.HTTP.GatewayAV, sub.HTTP.WebBlocker, sub.HTTP.APTBlocker
+			} else if sub.HTTPS != nil {
+				gav, wb, apt = sub.HTTPS.GatewayAV, sub.HTTPS.WebBlocker, sub.HTTPS.APTBlocker
+			} else {
+				continue
+			}
+			if boolVal(gav) {
+				ps.GatewayAV = true
+			}
+			if boolVal(wb) {
+				ps.WebBlocker = true
+			}
+			if boolVal(apt) {
+				ps.APTBlocker = true
+			}
+		}
+		// Also check direct TCP-level fields as fallback.
+		if boolVal(pa.TCP.GatewayAV) {
+			ps.GatewayAV = true
+		}
+		if boolVal(pa.TCP.APTBlocker) {
+			ps.APTBlocker = true
+		}
+	}
+
+	return ps
 }
 
 // Rule 1 (Critical): Default passwords
@@ -174,32 +230,25 @@ func checkSecurityServices(cfg *WatchGuardConfig) AuditResult {
 
 		var missing []string
 
-		// 1. Check IPS (Directly on policy)
+		// 1. Check IPS (directly on policy)
 		if policy.IPSMonitor != "1" && policy.IPSMonitor != "true" {
 			missing = append(missing, "IPS")
 		}
 
-		// 2. Check Proxy Services (GAV, WebBlocker, APT Blocker)
+		// 2. Check proxy security services (follows TCP-UDP redirect chains)
 		if policy.Proxy != "" {
 			if pa, ok := proxyMap[policy.Proxy]; ok {
-				var gav, wb, apt string
-				if pa.HTTP != nil {
-					gav, wb, apt = pa.HTTP.GatewayAV, pa.HTTP.WebBlocker, pa.HTTP.APTBlocker
-				} else if pa.HTTPS != nil {
-					gav, wb, apt = pa.HTTPS.GatewayAV, pa.HTTPS.WebBlocker, pa.HTTPS.APTBlocker
-				} else if pa.TCP != nil {
-					gav, apt = pa.TCP.GatewayAV, pa.TCP.APTBlocker
-				}
-
-				if gav != "1" && gav != "true" {
+				ps := resolveProxyServices(pa, proxyMap, policy.IPSMonitor)
+				if !ps.GatewayAV {
 					missing = append(missing, "Gateway AntiVirus")
 				}
-				if wb != "1" && wb != "true" {
-					if pa.TCP == nil { // TCP proxy doesn't have WebBlocker
-						missing = append(missing, "WebBlocker")
-					}
+				// WebBlocker only applies when there's an HTTP/HTTPS proxy action reachable
+				hasHTTP := pa.HTTP != nil || pa.HTTPS != nil ||
+					(pa.TCP != nil && hasHTTPRedirect(pa.TCP))
+				if hasHTTP && !ps.WebBlocker {
+					missing = append(missing, "WebBlocker")
 				}
-				if apt != "1" && apt != "true" {
+				if !ps.APTBlocker {
 					missing = append(missing, "APT Blocker")
 				}
 			}
