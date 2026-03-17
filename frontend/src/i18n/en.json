@@ -3,36 +3,75 @@
     "title": "Firebox Auditor",
     "subtitle": "WatchGuard Configuration Security Audit",
     "newAudit": "New Audit",
-    "selectMethod": "Select Audit Method",
-    "back": "Back",
     "auditResults": "Audit Results",
     "securityScore": "Security Score",
     "scoreGood": "Good",
     "scoreMedium": "Fair",
-    "scoreCritical": "Critical"
+    "scoreCritical": "Critical",
+    "back": "Back"
+  },
+  "auth": {
+    "loginTitle": "Sign In",
+    "loginSubtitle": "Sign in to your account to continue",
+    "username": "Username",
+    "password": "Password",
+    "loginBtn": "Sign In",
+    "loginLoading": "Signing In...",
+    "logout": "Logout",
+    "errorInvalid": "Invalid username or password.",
+    "errorServer": "Server error, please try again."
+  },
+  "dashboard": {
+    "title": "Audit History",
+    "subtitle": "Your last 3 audits are stored here",
+    "newAuditBtn": "Upload New XML",
+    "recentAudits": "Recent Audits",
+    "noAudits": "No audit records yet.",
+    "noAuditsHint": "Upload an XML configuration file to run your first audit.",
+    "viewReport": "View Report",
+    "deleteAudit": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this audit record?",
+    "score": "Security Score",
+    "criticalCount": "{{count}} critical findings",
+    "highCount": "{{count}} high findings",
+    "allPassed": "All checks passed",
+    "uploadedAt": "Uploaded",
+    "fileName": "File"
   },
   "upload": {
     "title": "Upload XML Configuration",
-    "cardTitle": "Upload XML File",
-    "cardDesc": "Upload a previously exported .xml configuration file.",
     "dropzone": "Click to select a file",
     "dropzoneHint": "WatchGuard configuration file in .xml format",
     "submit": "Upload & Audit",
-    "loading": "Analyzing..."
+    "loading": "Analyzing...",
+    "back": "Cancel"
   },
-  "ssh": {
-    "title": "SSH Connection",
-    "cardTitle": "Connect via CLI",
-    "cardDesc": "Connect to Firebox device via SSH and automatically retrieve configuration.",
+  "enrich": {
+    "bannerTitle": "Complete device information",
+    "bannerDesc": "Connect via SSH to automatically retrieve Serial Number, Uptime, and License details.",
+    "connectBtn": "Enrich via SSH",
+    "skipBtn": "Skip",
+    "modalTitle": "SSH Connection",
+    "modalSubtitle": "Serial Number, Uptime and Feature Key will be retrieved",
     "host": "IP Address",
     "port": "Port",
     "username": "Username",
     "password": "Password",
-    "submit": "Connect & Audit",
-    "loading": "Connecting..."
+    "submit": "Connect",
+    "loading": "Connecting...",
+    "cancel": "Skip",
+    "successTitle": "Device information updated",
+    "successDesc": "Serial number, uptime, and license details retrieved successfully.",
+    "errorPrefix": "SSH error"
   },
   "device": {
     "title": "Device Information",
+    "identitySection": "Device Identity",
+    "liveSection": "Live Data",
+    "licenseSection": "License (Feature Key)",
+    "enrichCta": "Enrich via SSH",
+    "sshConnected": "SSH Connected",
+    "sshPending": "Awaiting SSH connection",
     "model": "Model",
     "serial": "Serial Number",
     "firmware": "Firmware",
@@ -49,7 +88,13 @@
     "ifStatus": "Status",
     "uptime": "Uptime",
     "cpu": "CPU Usage",
-    "memory": "Memory Usage"
+    "memory": "Memory Usage",
+    "licenseActive": "Active",
+    "licenseExpired": "Expired",
+    "licenseUnlicensed": "Unlicensed",
+    "licenseExpiry": "Expires",
+    "noSerial": "—",
+    "unknown": "Unknown"
   },
   "severity": {
     "critical": "Critical",
@@ -63,9 +108,6 @@
   "card": {
     "howToFix": "How to Fix?"
   },
-  "ssh.cancel": "Cancel",
-  "ssh.enrichTitle": "SSH Info Update",
-  "device.sshUpdate": "Update via SSH",
   "policyTable": {
     "title": "Security Policy Visualization",
     "order": "Order",

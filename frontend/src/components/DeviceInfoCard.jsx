@@ -1,104 +1,207 @@
 import { useI18n } from '../i18n/I18nContext'
 
-export default function DeviceInfoCard({ info }) {
-  const { t } = useI18n()
+/* ── Small helpers ──────────────────────────────────────────────────────────── */
 
-  if (!info || !info.model) return null
-
-  const fields = [
-    { label: t('device.model'), value: info.model },
-    { label: t('device.serial'), value: info.serial_number || '-' },
-    { label: t('device.firmware'), value: info.firmware_version },
-    { label: t('device.systemName'), value: info.system_name },
-    { label: t('device.domain'), value: info.domain_name || '-' },
-    { label: t('device.contact'), value: info.contact || '-' },
-    { label: t('device.location'), value: info.location || '-' },
-    { label: t('device.dns'), value: (info.dns_servers || []).join(', ') || '-' },
-    { label: t('device.uptime'), value: info.up_time || '-' },
-    { label: t('device.cpu'), value: info.cpu_usage || '-' },
-    { label: t('device.memory'), value: info.memory_usage || '-' },
-  ]
-
-  const typeColors = {
-    External: 'bg-wg-red/10 text-wg-red dark:bg-wg-red/20 dark:text-red-300',
-    Trusted: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    Optional: 'bg-wg-blue/10 text-wg-blue dark:bg-wg-blue/20 dark:text-blue-300',
-    Mixed: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-    Other: 'bg-wg-gray-light text-wg-body dark:bg-wg-headline dark:text-wg-gray-light/70',
-  }
-
+function Row({ label, value, mono = false }) {
   return (
-    <div className="wg-card rounded-xl border border-wg-gray-light dark:border-wg-headline/40 bg-white dark:bg-wg-headline/15 overflow-hidden" id="device-info-card">
-      <div className="px-6 py-4 border-b border-wg-gray-light dark:border-wg-headline/30 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-wg-red flex items-center justify-center text-white text-sm font-bold shadow-sm">
-          {info.model?.[0] || 'F'}
-        </div>
-        <div className="flex-1">
-          <h3 className="font-medium text-wg-headline dark:text-white">
-            <span className="wg-accent mr-1">&gt;</span>
-            {t('device.title')}
-          </h3>
-          <p className="text-xs text-wg-body dark:text-wg-gray-light/50">WatchGuard {info.model} &mdash; {info.system_name}</p>
-        </div>
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('open-ssh-enrich'))}
-          className="px-3 py-1.5 rounded-md border border-wg-red/30 text-wg-red text-xs font-semibold hover:bg-wg-red hover:text-white transition-all flex items-center gap-2 group"
-          title="Fetch missing info via SSH"
-        >
-          <span className="group-hover:animate-pulse">🔐</span>
-          {t('device.sshUpdate')}
-        </button>
-      </div>
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-wg-gray-light/50 dark:border-wg-headline/20 last:border-0">
+      <span className="text-xs text-wg-body dark:text-wg-gray-light/50 shrink-0 pt-0.5">{label}</span>
+      <span className={`text-xs text-right text-wg-headline dark:text-white break-all ${mono ? 'font-mono' : 'font-medium'}`}>
+        {value || '—'}
+      </span>
+    </div>
+  )
+}
 
-      <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {fields.map((f) => (
-          <div key={f.label}>
-            <p className="text-xs text-wg-body dark:text-wg-gray-light/50 mb-0.5">{f.label}</p>
-            <p className="text-sm font-medium text-wg-headline dark:text-white truncate" title={f.value}>{f.value}</p>
-          </div>
+function SectionHeader({ icon, title, badge }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-xs font-bold text-wg-headline dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+        <span>{icon}</span> {title}
+      </h3>
+      {badge}
+    </div>
+  )
+}
+
+function ConnectedBadge({ label }) {
+  return (
+    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+      ✓ {label}
+    </span>
+  )
+}
+
+function BlurOverlay({ label, onEnrich }) {
+  return (
+    <div className="relative">
+      {/* Blurred fake rows */}
+      <div className="blur-sm pointer-events-none select-none space-y-2 py-1">
+        {[80, 60, 70].map((w, i) => (
+          <div key={i} className={`h-3 rounded bg-wg-gray-light dark:bg-wg-headline/40`} style={{ width: `${w}%` }} />
         ))}
       </div>
+      {/* CTA overlay */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <button
+          onClick={onEnrich}
+          className="px-4 py-2 rounded-lg bg-wg-red hover:bg-wg-red-hover text-white text-xs font-semibold shadow-lg transition active:scale-95"
+        >
+          🔑 {label}
+        </button>
+      </div>
+    </div>
+  )
+}
 
-      {info.interfaces?.length > 0 && (
-        <div className="px-6 pb-4">
-          <p className="text-xs text-wg-body dark:text-wg-gray-light/50 mb-2 font-medium uppercase tracking-wide">{t('device.interfaces')}</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-wg-headline dark:text-wg-gray-light/60 border-b border-wg-gray-light dark:border-wg-headline/30">
-                  <th className="text-left py-2 pr-4 font-medium">{t('device.ifName')}</th>
-                  <th className="text-left py-2 pr-4 font-medium">{t('device.ifType')}</th>
-                  <th className="text-left py-2 pr-4 font-medium">{t('device.ifDevice')}</th>
-                  <th className="text-left py-2 pr-4 font-medium">{t('device.ifIP')}</th>
-                  <th className="text-left py-2 font-medium">{t('device.ifStatus')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {info.interfaces.map((iface, i) => (
-                  <tr key={i} className="border-b border-wg-gray-light/50 dark:border-wg-headline/20 last:border-0">
-                    <td className="py-2 pr-4 font-medium text-wg-headline dark:text-white">{iface.name}</td>
-                    <td className="py-2 pr-4">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${typeColors[iface.type] || typeColors.Other}`}>
-                        {iface.type}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4 text-wg-body dark:text-wg-gray-light/60">{iface.device}</td>
-                    <td className="py-2 pr-4 text-wg-body dark:text-wg-gray-light/60 font-mono text-xs">
-                      {iface.ip}{iface.ip !== 'DHCP' && iface.netmask ? ` / ${iface.netmask}` : ''}
-                    </td>
-                    <td className="py-2">
-                      <span className={`inline-flex items-center gap-1.5 text-xs ${iface.enabled ? 'text-green-600 dark:text-green-400' : 'text-wg-body dark:text-wg-gray-light/40'}`}>
-                        <span className={`inline-block w-2 h-2 rounded-full ${iface.enabled ? 'bg-green-500' : 'bg-wg-body/30 dark:bg-wg-gray-light/20'}`} />
-                        {iface.enabled ? 'Active' : 'Off'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+/* ── Feature Key Section ─────────────────────────────────────────────────────── */
+
+function FeatureKeySection({ featureKey, t }) {
+  if (!featureKey || !featureKey.features?.length) return null
+
+  // Key features to highlight
+  const highlight = ['LiveSecurity', 'Gateway AntiVirus', 'WebBlocker', 'Intrusion Prevention', 'APT Blocker', 'Application Control']
+
+  const featured = featureKey.features.filter(f =>
+    highlight.some(h => f.name?.toLowerCase().includes(h.toLowerCase()))
+  )
+  const others = featureKey.features.filter(f =>
+    !highlight.some(h => f.name?.toLowerCase().includes(h.toLowerCase()))
+  )
+
+  const renderFeature = (f, i) => (
+    <div key={i} className="flex items-center justify-between py-1.5 border-b border-wg-gray-light/50 dark:border-wg-headline/20 last:border-0">
+      <span className="text-xs text-wg-body dark:text-wg-gray-light/60 truncate pr-2">{f.name}</span>
+      <div className="flex items-center gap-2 shrink-0">
+        {f.expiration && (
+          <span className="text-[10px] text-wg-body dark:text-wg-gray-light/40">
+            {t('device.licenseExpiry')}: {f.expiration}
+          </span>
+        )}
+        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+          f.active
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : 'bg-wg-red/10 text-wg-red'
+        }`}>
+          {f.active ? t('device.licenseActive') : t('device.licenseExpired')}
+        </span>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-0">
+      {featured.map(renderFeature)}
+      {others.length > 0 && (
+        <details className="mt-1">
+          <summary className="text-[10px] text-wg-body dark:text-wg-gray-light/40 cursor-pointer hover:text-wg-red select-none py-1">
+            +{others.length} {t('device.licenseUnlicensed')}...
+          </summary>
+          <div className="mt-1">{others.map(renderFeature)}</div>
+        </details>
       )}
+    </div>
+  )
+}
+
+/* ── Main Component ──────────────────────────────────────────────────────────── */
+
+export default function DeviceInfoCard({ info, enrichment, onEnrichRequest }) {
+  const { t } = useI18n()
+
+  const hasEnrich = !!enrichment
+
+  return (
+    <div className="rounded-2xl border border-wg-gray-light dark:border-wg-headline/30 bg-white dark:bg-wg-headline/10 overflow-hidden shadow-sm">
+
+      {/* ── Section 1: Device Identity (from XML) ───────────────────── */}
+      <div className="px-5 py-4 border-b border-wg-gray-light dark:border-wg-headline/20">
+        <SectionHeader icon="🔷" title={t('device.identitySection')} />
+        <div className="space-y-0">
+          {info?.model        && <Row label={t('device.model')}      value={info.model} />}
+          {info?.firmware_version && <Row label={t('device.firmware')} value={info.firmware_version} mono />}
+          {info?.system_name  && <Row label={t('device.systemName')} value={info.system_name} />}
+          {info?.domain_name  && <Row label={t('device.domain')}     value={info.domain_name} />}
+          {info?.contact      && <Row label={t('device.contact')}    value={info.contact} />}
+          {info?.location     && <Row label={t('device.location')}   value={info.location} />}
+          {info?.dns_servers?.length > 0 && (
+            <Row label={t('device.dns')} value={info.dns_servers.join(', ')} mono />
+          )}
+        </div>
+
+        {/* Interface table */}
+        {info?.interfaces?.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[10px] font-bold text-wg-body dark:text-wg-gray-light/40 uppercase tracking-wider mb-2">
+              {t('device.interfaces')}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-wg-body dark:text-wg-gray-light/40 text-left">
+                    <th className="pb-1 pr-3 font-medium">{t('device.ifName')}</th>
+                    <th className="pb-1 pr-3 font-medium">{t('device.ifType')}</th>
+                    <th className="pb-1 pr-3 font-medium">{t('device.ifIP')}</th>
+                    <th className="pb-1 font-medium">{t('device.ifStatus')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-wg-gray-light/30 dark:divide-wg-headline/20">
+                  {info.interfaces.map((iface, i) => (
+                    <tr key={i} className="text-wg-headline dark:text-wg-gray-light/80">
+                      <td className="py-1 pr-3 font-mono">{iface.name}</td>
+                      <td className="py-1 pr-3">{iface.type}</td>
+                      <td className="py-1 pr-3 font-mono">{iface.ip || '—'}</td>
+                      <td className="py-1">
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${iface.enabled ? 'bg-emerald-500' : 'bg-wg-body/30'}`} />
+                        {iface.enabled ? 'UP' : 'DOWN'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 2: Live Data (from SSH) ─────────────────────────── */}
+      <div className="px-5 py-4 border-b border-wg-gray-light dark:border-wg-headline/20">
+        <SectionHeader
+          icon="📡"
+          title={t('device.liveSection')}
+          badge={hasEnrich
+            ? <ConnectedBadge label={t('device.sshConnected')} />
+            : <span className="text-[10px] text-wg-body dark:text-wg-gray-light/40">{t('device.sshPending')}</span>
+          }
+        />
+        {hasEnrich ? (
+          <div className="space-y-0">
+            <Row label={t('device.serial')}  value={enrichment.serial_number} mono />
+            <Row label={t('device.uptime')}  value={enrichment.up_time} />
+            <Row label={t('device.cpu')}     value={enrichment.cpu_usage} />
+            <Row label={t('device.memory')}  value={enrichment.memory_usage} />
+          </div>
+        ) : (
+          <BlurOverlay label={t('device.enrichCta')} onEnrich={onEnrichRequest} />
+        )}
+      </div>
+
+      {/* ── Section 3: License (Feature Key) ────────────────────────── */}
+      <div className="px-5 py-4">
+        <SectionHeader
+          icon="🔑"
+          title={t('device.licenseSection')}
+          badge={hasEnrich
+            ? <ConnectedBadge label={t('device.sshConnected')} />
+            : null
+          }
+        />
+        {hasEnrich && enrichment.feature_key ? (
+          <FeatureKeySection featureKey={enrichment.feature_key} t={t} />
+        ) : (
+          <BlurOverlay label={t('device.enrichCta')} onEnrich={onEnrichRequest} />
+        )}
+      </div>
     </div>
   )
 }

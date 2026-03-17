@@ -3,36 +3,75 @@
     "title": "Firebox Auditor",
     "subtitle": "WatchGuard Konfigürasyon Güvenlik Denetimi",
     "newAudit": "Yeni Denetim",
-    "selectMethod": "Denetim Yöntemini Seçin",
-    "back": "Geri",
     "auditResults": "Denetim Sonuçları",
     "securityScore": "Güvenlik Skoru",
     "scoreGood": "İyi",
     "scoreMedium": "Orta",
-    "scoreCritical": "Kritik"
+    "scoreCritical": "Kritik",
+    "back": "Geri"
+  },
+  "auth": {
+    "loginTitle": "Giriş Yap",
+    "loginSubtitle": "Devam etmek için hesabınıza giriş yapın",
+    "username": "Kullanıcı Adı",
+    "password": "Şifre",
+    "loginBtn": "Giriş Yap",
+    "loginLoading": "Giriş Yapılıyor...",
+    "logout": "Çıkış",
+    "errorInvalid": "Kullanıcı adı veya şifre hatalı.",
+    "errorServer": "Sunucu hatası, lütfen tekrar deneyin."
+  },
+  "dashboard": {
+    "title": "Denetim Geçmişi",
+    "subtitle": "Son 3 denetiminiz burada saklanır",
+    "newAuditBtn": "Yeni XML Yükle",
+    "recentAudits": "Son Denetimler",
+    "noAudits": "Henüz denetim kaydı yok.",
+    "noAuditsHint": "Yeni bir XML dosyası yükleyerek ilk denetimi başlatın.",
+    "viewReport": "Raporu Görüntüle",
+    "deleteAudit": "Sil",
+    "deleteConfirm": "Bu denetim kaydını silmek istediğinizden emin misiniz?",
+    "score": "Güvenlik Skoru",
+    "criticalCount": "{{count}} kritik bulgu",
+    "highCount": "{{count}} yüksek bulgu",
+    "allPassed": "Tüm kontroller geçti",
+    "uploadedAt": "Yükleme",
+    "fileName": "Dosya"
   },
   "upload": {
     "title": "XML Konfigürasyon Yükle",
-    "cardTitle": "XML Dosya Yükle",
-    "cardDesc": "Daha önce dışa aktardığınız .xml konfigürasyon dosyasını yükleyin.",
     "dropzone": "Dosya seçmek için tıklayın",
     "dropzoneHint": ".xml formatında WatchGuard konfigürasyon dosyası",
     "submit": "Yükle ve Denetle",
-    "loading": "Analiz Ediliyor..."
+    "loading": "Analiz Ediliyor...",
+    "back": "İptal"
   },
-  "ssh": {
-    "title": "SSH Bağlantısı",
-    "cardTitle": "CLI ile Bağlan",
-    "cardDesc": "SSH üzerinden Firebox cihazına bağlanıp konfigürasyonu otomatik alın.",
+  "enrich": {
+    "bannerTitle": "Cihaz bilgilerini tamamlayın",
+    "bannerDesc": "SSH ile bağlanarak Seri No, Uptime ve Lisans bilgilerini otomatik çekin.",
+    "connectBtn": "SSH ile Zenginleştir",
+    "skipBtn": "Atla",
+    "modalTitle": "SSH Bağlantısı",
+    "modalSubtitle": "Seri No, Uptime ve Feature Key bilgileri çekilecek",
     "host": "IP Adresi",
     "port": "Port",
     "username": "Kullanıcı Adı",
     "password": "Şifre",
-    "submit": "Bağlan ve Denetle",
-    "loading": "Bağlanıyor..."
+    "submit": "Bağlan",
+    "loading": "Bağlanıyor...",
+    "cancel": "Atla",
+    "successTitle": "Cihaz bilgileri güncellendi",
+    "successDesc": "Seri numarası, uptime ve lisans bilgileri başarıyla alındı.",
+    "errorPrefix": "SSH hatası"
   },
   "device": {
     "title": "Cihaz Bilgileri",
+    "identitySection": "Cihaz Kimliği",
+    "liveSection": "Canlı Veri",
+    "licenseSection": "Lisans (Feature Key)",
+    "enrichCta": "SSH ile Zenginleştir",
+    "sshConnected": "SSH Bağlandı",
+    "sshPending": "SSH bağlantısı bekleniyor",
     "model": "Model",
     "serial": "Seri Numarası",
     "firmware": "Firmware",
@@ -49,7 +88,13 @@
     "ifStatus": "Durum",
     "uptime": "Çalışma Süresi",
     "cpu": "CPU Kullanımı",
-    "memory": "Bellek Kullanımı"
+    "memory": "Bellek Kullanımı",
+    "licenseActive": "Aktif",
+    "licenseExpired": "Süresi Dolmuş",
+    "licenseUnlicensed": "Lisanssız",
+    "licenseExpiry": "Bitiş",
+    "noSerial": "—",
+    "unknown": "Bilinmiyor"
   },
   "severity": {
     "critical": "Kritik",
@@ -63,11 +108,8 @@
   "card": {
     "howToFix": "Nasıl Düzeltilir?"
   },
-  "ssh.cancel": "İptal Et",
-  "ssh.enrichTitle": "SSH Bilgi Güncelleme",
-  "device.sshUpdate": "SSH ile Güncelle",
   "policyTable": {
-    "title": "Güvenlik Polisi Görselleştirme",
+    "title": "Güvenlik Politikası Görselleştirme",
     "order": "Sıra",
     "action": "Aksiyon",
     "name": "Politika Adı",

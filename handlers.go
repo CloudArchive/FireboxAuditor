@@ -1,37 +1,112 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func setupRoutes(r *gin.Engine) {
-	api := r.Group("/api")
+	// Public
+	r.POST("/api/auth/login", handleLogin)
+
+	// Protected
+	api := r.Group("/api", AuthMiddleware())
 	{
+		// History
+		api.GET("/history", handleListHistory)
+		api.GET("/history/:id", handleGetHistory)
+		api.DELETE("/history/:id", handleDeleteHistory)
+
+		// Audit
 		api.POST("/audit/upload", handleUpload)
-		api.POST("/audit/ssh", handleSSH)
+
+		// SSH enrichment (separate from audit)
+		api.POST("/ssh/enrich", handleSSHEnrich)
 	}
 }
 
+// ── History Handlers ──────────────────────────────────────────────────────────
+
+func handleListHistory(c *gin.Context) {
+	username := c.GetString("username")
+	records, err := ListAudits(username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Geçmiş yüklenemedi: " + err.Error()})
+		return
+	}
+	// Return lightweight summaries (no full report payload)
+	type Summary struct {
+		ID         string    `json:"id"`
+		CreatedAt  time.Time `json:"created_at"`
+		FileName   string    `json:"file_name"`
+		DeviceName string    `json:"device_name"`
+		Score      int       `json:"score"`
+		Enriched   bool      `json:"enriched"`
+	}
+	summaries := make([]Summary, 0, len(records))
+	for _, r := range records {
+		summaries = append(summaries, Summary{
+			ID:         r.ID,
+			CreatedAt:  r.CreatedAt,
+			FileName:   r.FileName,
+			DeviceName: r.DeviceName,
+			Score:      r.Score,
+			Enriched:   r.Enrichment != nil,
+		})
+	}
+	c.JSON(http.StatusOK, summaries)
+}
+
+func handleGetHistory(c *gin.Context) {
+	username := c.GetString("username")
+	id := c.Param("id")
+
+	record, err := GetAudit(username, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if record == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Kayıt bulunamadı"})
+		return
+	}
+	c.JSON(http.StatusOK, record)
+}
+
+func handleDeleteHistory(c *gin.Context) {
+	username := c.GetString("username")
+	id := c.Param("id")
+
+	if err := DeleteAudit(username, id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// ── Upload + Audit ────────────────────────────────────────────────────────────
+
 func handleUpload(c *gin.Context) {
-	file, _, err := c.Request.FormFile("config")
+	username := c.GetString("username")
+
+	// File size limit: 10 MB
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
+
+	file, header, err := c.Request.FormFile("config")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "XML dosyası yüklenemedi: " + err.Error()})
 		return
 	}
 	defer file.Close()
 
-	const maxUploadSize = 10 << 20 // 10 MB
-	data, err := io.ReadAll(io.LimitReader(file, maxUploadSize))
+	data, err := io.ReadAll(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Dosya okunamadı: " + err.Error()})
-		return
-	}
-	if int64(len(data)) >= maxUploadSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dosya boyutu 10 MB sınırını aşıyor"})
 		return
 	}
 
@@ -42,34 +117,63 @@ func handleUpload(c *gin.Context) {
 	}
 
 	report := RunAudit(cfg)
-	c.JSON(http.StatusOK, report)
+
+	// Build record
+	deviceName := cfg.SystemParameters.DeviceConf.SystemName
+	if deviceName == "" {
+		deviceName = cfg.SystemParameters.DeviceConf.Model
+	}
+	if deviceName == "" {
+		deviceName = "Firebox"
+	}
+
+	record := &AuditRecord{
+		ID:         fmt.Sprintf("%d", time.Now().UnixMilli()),
+		CreatedAt:  time.Now(),
+		FileName:   header.Filename,
+		DeviceName: deviceName,
+		Score:      report.Score,
+		Report:     report,
+	}
+
+	if err := SaveAudit(username, record); err != nil {
+		// Non-fatal: return report even if save fails
+		c.JSON(http.StatusOK, gin.H{
+			"id":     record.ID,
+			"report": report,
+			"warn":   "Kayıt kaydedilemedi: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":     record.ID,
+		"report": report,
+	})
 }
 
-func handleSSH(c *gin.Context) {
+// ── SSH Enrich ────────────────────────────────────────────────────────────────
+
+func handleSSHEnrich(c *gin.Context) {
+	username := c.GetString("username")
+
 	var req struct {
+		AuditID string `json:"audit_id" binding:"required"`
 		SSHConfig
-		Action string `json:"action"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz istek: " + err.Error()})
 		return
 	}
 
-	command := ""
-	switch req.Action {
-	case "sysinfo":
-		command = "sysinfo"
-	case "audit":
-		// Try both documented and undocumented export commands
-		command = "export config to console"
-	case "feature-key":
-		command = "show feature-key"
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Geçersiz aksiyon"})
+	// Verify the audit belongs to this user
+	record, err := GetAudit(username, req.AuditID)
+	if err != nil || record == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Audit kaydı bulunamadı"})
 		return
 	}
 
-	output, logs, err := ExecuteSSHCommand(req.SSHConfig, command)
+	enrich, logs, err := EnrichFromSSH(req.SSHConfig)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -78,54 +182,79 @@ func handleSSH(c *gin.Context) {
 		return
 	}
 
-	if req.Action == "sysinfo" {
-		sysInfo := ParseSysInfo(output)
+	// Persist enrichment
+	if saveErr := UpdateEnrichment(username, req.AuditID, enrich); saveErr != nil {
+		// Non-fatal
 		c.JSON(http.StatusOK, gin.H{
-			"data": sysInfo,
-			"logs": logs,
+			"enrichment": enrich,
+			"logs":       logs,
+			"warn":       "Zenginleştirme kaydedilemedi: " + saveErr.Error(),
 		})
 		return
 	}
 
-	if req.Action == "feature-key" {
-		c.JSON(http.StatusOK, gin.H{
-			"data": output, // Return raw for now, can parse later if needed
-			"logs": logs,
-		})
-		return
-	}
-
-	// Default to audit/config fetch
-	startIdx := strings.Index(output, "<?xml")
-	if startIdx == -1 {
-		startIdx = strings.Index(output, "<profile")
-	}
-
-	if startIdx == -1 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Konfigürasyon verisi bulunamadı. Cihazınız 'export config to console' komutunu desteklemiyor olabilir.",
-			"logs":  logs,
-		})
-		return
-	}
-
-	xmlData := output[startIdx:]
-	if endIdx := strings.Index(xmlData, "</profile>"); endIdx != -1 {
-		xmlData = xmlData[:endIdx+len("</profile>")]
-	}
-
-	cfg, err := ParseConfig([]byte(xmlData))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "XML parse hatası: " + err.Error(),
-			"logs":  logs,
-		})
-		return
-	}
-
-	report := RunAudit(cfg)
 	c.JSON(http.StatusOK, gin.H{
-		"report": report,
-		"logs":   logs,
+		"enrichment": enrich,
+		"logs":       logs,
 	})
+}
+
+// ── SSH Enrich Logic (moved from ssh_client.go) ───────────────────────────────
+
+func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
+	// Run sysinfo
+	sysOutput, logs, err := ExecuteSSHCommand(cfg, "sysinfo")
+	if err != nil {
+		return nil, logs, fmt.Errorf("sysinfo komutu başarısız: %w", err)
+	}
+	sysInfo := ParseSysInfo(sysOutput)
+
+	// Run show feature-key
+	fkOutput, fkLogs, err := ExecuteSSHCommand(cfg, "show feature-key")
+	logs = append(logs, fkLogs...)
+	if err != nil {
+		// Feature key is optional — don't fail the whole enrichment
+		logs = append(logs, "[WARN] feature-key alınamadı: "+err.Error())
+	}
+
+	enrich := &EnrichData{
+		SerialNumber: sysInfo.SerialNumber,
+		UpTime:       sysInfo.UpTime,
+		MemoryUsage:  sysInfo.MemoryUsage,
+		CPUUsage:     sysInfo.CPUUsage,
+		EnrichedAt:   time.Now(),
+	}
+
+	if fkOutput != "" {
+		// Strip ANSI/control chars and leading prompt lines
+		clean := stripSSHNoise(fkOutput)
+		enrich.FeatureKey = ParseFeatureKey(clean)
+	}
+
+	// Fallback: pull serial from feature-key output if sysinfo didn't have it
+	if enrich.SerialNumber == "" && enrich.FeatureKey != nil {
+		for _, line := range splitLines(enrich.FeatureKey.Raw) {
+			t := trimSpace(line)
+			if hasPrefix(t, "Serial Number:") {
+				enrich.SerialNumber = trimSpace(t[len("Serial Number:"):])
+				break
+			}
+		}
+	}
+
+	return enrich, logs, nil
+}
+
+// stripSSHNoise removes prompt lines and ANSI codes from CLI output.
+func stripSSHNoise(s string) string {
+	var clean []string
+	for _, line := range splitLines(s) {
+		// Skip prompt lines (WG# or WG>)
+		stripped := trimSpace(line)
+		if strings.HasPrefix(stripped, "WG#") || strings.HasPrefix(stripped, "WG>") {
+			continue
+		}
+		clean = append(clean, line)
+	}
+	return strings.Join(clean, "\n")
 }

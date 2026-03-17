@@ -19,6 +19,9 @@ func main() {
 		port = "8443"
 	}
 
+	// Initialize auth (creates default user if needed)
+	initAuth()
+
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -33,9 +36,8 @@ func main() {
 	fileServer := http.FileServer(http.FS(distFS))
 
 	r.NoRoute(func(c *gin.Context) {
-		// Try to serve the file; fall back to index.html for SPA routing
 		path := c.Request.URL.Path
-		f, err := distFS.Open(path[1:]) // strip leading "/"
+		f, err := distFS.Open(path[1:])
 		if err == nil {
 			f.Close()
 			fileServer.ServeHTTP(c.Writer, c.Request)
@@ -46,19 +48,8 @@ func main() {
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 
-	tlsCert := os.Getenv("TLS_CERT")
-	tlsKey := os.Getenv("TLS_KEY")
-
-	if tlsCert != "" && tlsKey != "" {
-		log.Printf("Firebox Auditor başlatılıyor (TLS): https://localhost:%s\n", port)
-		if err := r.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
-			log.Fatal("Sunucu başlatılamadı:", err)
-		}
-	} else {
-		log.Printf("Firebox Auditor başlatılıyor: http://localhost:%s\n", port)
-		log.Println("UYARI: TLS aktif değil. TLS_CERT ve TLS_KEY ortam değişkenlerini ayarlayın.")
-		if err := r.Run(":" + port); err != nil {
-			log.Fatal("Sunucu başlatılamadı:", err)
-		}
+	log.Printf("Firebox Auditor başlatılıyor: http://localhost:%s\n", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatal("Sunucu başlatılamadı:", err)
 	}
 }
