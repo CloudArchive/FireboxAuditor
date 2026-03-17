@@ -223,11 +223,14 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 		MemoryUsage:  sysInfo.MemoryUsage,
 		CPUUsage:     sysInfo.CPUUsage,
 		EnrichedAt:   time.Now(),
+		SSHHost:      cfg.Host,
+		SSHPort:      cfg.Port,
+		SSHUsername:  cfg.Username,
 	}
 
 	if fkOutput != "" {
 		// Strip ANSI/control chars and leading prompt lines
-		clean := stripSSHNoise(fkOutput)
+		clean := stripSSHNoise(stripANSI(fkOutput))
 		enrich.FeatureKey = ParseFeatureKey(clean)
 	}
 

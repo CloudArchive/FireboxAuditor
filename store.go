@@ -24,12 +24,15 @@ type AuditRecord struct {
 }
 
 type EnrichData struct {
-	SerialNumber string         `json:"serial_number"`
-	UpTime       string         `json:"up_time"`
-	MemoryUsage  string         `json:"memory_usage"`
-	CPUUsage     string         `json:"cpu_usage"`
+	SerialNumber string            `json:"serial_number"`
+	UpTime       string            `json:"up_time"`
+	MemoryUsage  string            `json:"memory_usage"`
+	CPUUsage     string            `json:"cpu_usage"`
 	FeatureKey   *ParsedFeatureKey `json:"feature_key,omitempty"`
-	EnrichedAt   time.Time      `json:"enriched_at"`
+	EnrichedAt   time.Time         `json:"enriched_at"`
+	SSHHost      string            `json:"ssh_host,omitempty"`
+	SSHPort      int               `json:"ssh_port,omitempty"`
+	SSHUsername  string            `json:"ssh_username,omitempty"`
 }
 
 type ParsedFeatureKey struct {

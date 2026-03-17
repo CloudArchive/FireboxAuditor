@@ -34,6 +34,11 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
     onRecordUpdate?.({ ...auditRecord, enrichment: newEnrichment })
   }
 
+  const handleDisconnect = () => {
+    setEnrichment(null)
+    onRecordUpdate?.({ ...auditRecord, enrichment: null })
+  }
+
   return (
     <div className="min-h-screen hexagon-bg wg-watermark transition-colors relative">
 
@@ -43,6 +48,11 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
           auditId={auditRecord.id}
           onEnriched={handleEnriched}
           onSkip={() => setShowEnrich(false)}
+          initialValues={enrichment ? {
+            host: enrichment.ssh_host,
+            port: enrichment.ssh_port,
+            username: enrichment.ssh_username,
+          } : null}
         />
       )}
 
@@ -111,6 +121,8 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
               info={deviceInfo}
               enrichment={enrichment || null}
               onEnrichRequest={() => setShowEnrich(true)}
+              onReconnect={() => setShowEnrich(true)}
+              onDisconnect={handleDisconnect}
             />
           </div>
           <div className="flex flex-col gap-6">

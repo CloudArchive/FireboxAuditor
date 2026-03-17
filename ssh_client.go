@@ -103,9 +103,30 @@ func ExecuteSSHCommand(cfg SSHConfig, command string) (string, []string, error) 
 	return stdout.String(), logs, nil
 }
 
+// stripANSI removes ANSI/VT100 escape sequences from a string.
+func stripANSI(s string) string {
+	b := []byte(s)
+	out := make([]byte, 0, len(b))
+	for i := 0; i < len(b); {
+		if b[i] == 0x1b && i+1 < len(b) && b[i+1] == '[' {
+			i += 2
+			for i < len(b) && !((b[i] >= 'A' && b[i] <= 'Z') || (b[i] >= 'a' && b[i] <= 'z')) {
+				i++
+			}
+			if i < len(b) {
+				i++
+			}
+		} else {
+			out = append(out, b[i])
+			i++
+		}
+	}
+	return string(out)
+}
+
 func ParseSysInfo(output string) SysInfo {
 	info := SysInfo{}
-	lines := strings.Split(output, "\n")
+	lines := strings.Split(stripANSI(output), "\n")
 	for _, line := range lines {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) < 2 {

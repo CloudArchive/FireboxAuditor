@@ -2,10 +2,15 @@ import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function SshEnrichModal({ auditId, onEnriched, onSkip }) {
+export default function SshEnrichModal({ auditId, onEnriched, onSkip, initialValues }) {
   const { t } = useI18n()
   const { apiFetch } = useAuth()
-  const [form, setForm] = useState({ host: '', port: '4118', username: 'admin', password: '' })
+  const [form, setForm] = useState({
+    host: initialValues?.host || '',
+    port: initialValues?.port ? String(initialValues.port) : '4118',
+    username: initialValues?.username || 'admin',
+    password: '',
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [logs, setLogs] = useState([])

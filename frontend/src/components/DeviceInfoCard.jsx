@@ -24,11 +24,31 @@ function SectionHeader({ icon, title, badge }) {
   )
 }
 
-function ConnectedBadge({ label }) {
+function ConnectedBadge({ label, host, onReconnect, onDisconnect }) {
   return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
-      ✓ {label}
-    </span>
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+        ✓ {label}{host ? ` · ${host}` : ''}
+      </span>
+      {onReconnect && (
+        <button
+          onClick={onReconnect}
+          title="Yeniden bağlan"
+          className="text-[10px] px-1.5 py-0.5 rounded bg-wg-blue/10 text-wg-blue hover:bg-wg-blue/20 transition font-medium border border-wg-blue/20"
+        >
+          ↺
+        </button>
+      )}
+      {onDisconnect && (
+        <button
+          onClick={onDisconnect}
+          title="Bağlantıyı kes"
+          className="text-[10px] px-1.5 py-0.5 rounded bg-wg-red/10 text-wg-red hover:bg-wg-red/20 transition font-medium border border-wg-red/20"
+        >
+          ✕
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -106,7 +126,7 @@ function FeatureKeySection({ featureKey, t }) {
 
 /* ── Main Component ──────────────────────────────────────────────────────────── */
 
-export default function DeviceInfoCard({ info, enrichment, onEnrichRequest }) {
+export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onReconnect, onDisconnect }) {
   const { t } = useI18n()
 
   const hasEnrich = !!enrichment
@@ -170,7 +190,12 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest }) {
           icon="📡"
           title={t('device.liveSection')}
           badge={hasEnrich
-            ? <ConnectedBadge label={t('device.sshConnected')} />
+            ? <ConnectedBadge
+                label={t('device.sshConnected')}
+                host={enrichment.ssh_host}
+                onReconnect={onReconnect}
+                onDisconnect={onDisconnect}
+              />
             : <span className="text-[10px] text-wg-body dark:text-wg-gray-light/40">{t('device.sshPending')}</span>
           }
         />
@@ -192,7 +217,7 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest }) {
           icon="🔑"
           title={t('device.licenseSection')}
           badge={hasEnrich
-            ? <ConnectedBadge label={t('device.sshConnected')} />
+            ? <ConnectedBadge label={t('device.sshConnected')} host={enrichment.ssh_host} />
             : null
           }
         />
