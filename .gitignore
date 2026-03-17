@@ -4,3 +4,4 @@ static/*
 frontend/node_modules/
 .env
 firebox-auditor
+.DS_Store

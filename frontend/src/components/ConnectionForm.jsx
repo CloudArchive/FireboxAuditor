@@ -18,21 +18,24 @@ export default function ConnectionForm({ onSubmit, loading }) {
 
   const field = (labelKey, key, type = 'text', placeholder = '') => (
     <div>
-      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t(labelKey)}</label>
+      <label className="block text-sm font-medium text-wg-body dark:text-wg-gray-light/70 mb-1.5">{t(labelKey)}</label>
       <input
         type={type}
         value={form[key]}
         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
         placeholder={placeholder}
         required
-        className="w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+        className="w-full px-4 py-2.5 rounded-md bg-white dark:bg-wg-black border border-wg-gray-light dark:border-wg-headline text-wg-headline dark:text-wg-gray-light placeholder-wg-body/50 focus:outline-none focus:border-wg-red focus:ring-1 focus:ring-wg-red/30 transition"
       />
     </div>
   )
 
   return (
-    <form onSubmit={handleSubmit} className="p-8 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-5">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('ssh.title')}</h3>
+    <form onSubmit={handleSubmit} className="wg-card p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/20 wg-concrete space-y-5" id="ssh-form">
+      <h3 className="text-lg font-medium text-wg-headline dark:text-white">
+        <span className="wg-accent mr-1">&gt;</span>
+        {t('ssh.title')}
+      </h3>
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2">{field('ssh.host', 'host', 'text', '192.168.1.1')}</div>
         {field('ssh.port', 'port', 'number')}
@@ -42,7 +45,8 @@ export default function ConnectionForm({ onSubmit, loading }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 text-white font-semibold transition disabled:opacity-50"
+        className="w-full py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        id="ssh-submit"
       >
         {loading ? t('ssh.loading') : t('ssh.submit')}
       </button>

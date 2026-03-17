@@ -1,3 +1,93 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── WatchGuard Brand CSS Layer ─────────────────────── */
+
+@layer base {
+  :root {
+    --wg-red: #E81410;
+    --wg-red-hover: #B32317;
+    --wg-gray-light: #EAEAEA;
+    --wg-body: #666666;
+    --wg-headline: #2D3237;
+    --wg-blue: #035996;
+    --wg-blue-hover: #002663;
+    --wg-black: #000000;
+  }
+
+  /* Scrollbar brand touch */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--wg-body); border-radius: 3px; }
+  .dark ::-webkit-scrollbar-thumb { background: #444; }
+
+  /* Selection highlight */
+  ::selection { background: var(--wg-red); color: #fff; }
+}
+
+@layer components {
+  /* ── Hexagon background pattern ───────────────────── */
+  .hexagon-bg {
+    position: relative;
+  }
+  .hexagon-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66ZM28 100L0 84L0 50L28 34L56 50L56 84L28 100Z' fill='none' stroke='%23666666' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 56px 100px;
+  }
+  .dark .hexagon-bg::before {
+    opacity: 0.06;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66ZM28 100L0 84L0 50L28 34L56 50L56 84L28 100Z' fill='none' stroke='%23EAEAEA' stroke-width='1'/%3E%3C/svg%3E");
+  }
+
+  /* ── WatchGuard "W" watermark ──────────────────────── */
+  .wg-watermark {
+    position: relative;
+  }
+  .wg-watermark::after {
+    content: 'W';
+    position: fixed;
+    right: -60px;
+    bottom: -40px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 420px;
+    line-height: 1;
+    color: var(--wg-red);
+    opacity: 0.045;
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+  }
+  .dark .wg-watermark::after {
+    opacity: 0.06;
+  }
+
+  /* ── Brand accent glyph ───────────────────────────── */
+  .wg-accent {
+    color: var(--wg-red);
+    font-weight: 700;
+  }
+
+  /* ── Card entrance animation ──────────────────────── */
+  .wg-card {
+    animation: slideUp 0.4s ease-out both;
+  }
+
+  /* ── Concrete texture for dark panels ─────────────── */
+  .wg-concrete {
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  .text-wg-title {
+    @apply font-medium tracking-tight;
+  }
+}

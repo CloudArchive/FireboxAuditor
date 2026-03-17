@@ -8,6 +8,26 @@ import UploadForm from './components/UploadForm'
 import LangSwitch from './components/LangSwitch'
 import ThemeSwitch from './components/ThemeSwitch'
 
+/* ── WatchGuard Logo SVG ──────────────────────────── */
+function WGLogo({ className = '' }) {
+  return (
+    <svg viewBox="0 0 40 40" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Magnifying glass circle */}
+      <circle cx="18" cy="18" r="16" strokeWidth="3" className="stroke-wg-black dark:stroke-white" />
+      {/* "W" inside */}
+      <path
+        d="M9 12L12.5 26L16.5 16L20.5 26L24 12"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-wg-black dark:stroke-white"
+      />
+      {/* Red handle */}
+      <line x1="30" y1="30" x2="38" y2="38" strokeWidth="4" strokeLinecap="round" stroke="#E81410" />
+    </svg>
+  )
+}
+
 export default function App() {
   const { t } = useI18n()
   const [report, setReport] = useState(null)
@@ -42,16 +62,18 @@ export default function App() {
     : []
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/50 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen hexagon-bg wg-watermark transition-colors relative">
+      {/* ── Header ──────────────────────────────────── */}
+      <header className="border-b border-wg-gray-light dark:border-wg-headline/30 bg-white/90 dark:bg-wg-black/90 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-bold text-lg text-white">
-              FA
-            </div>
+            <WGLogo className="w-10 h-10" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('app.title')}</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('app.subtitle')}</p>
+              <h1 className="text-xl font-semibold text-wg-headline dark:text-white tracking-tight">
+                <span className="wg-accent mr-1">&gt;</span>
+                {t('app.title')}
+              </h1>
+              <p className="text-xs text-wg-body dark:text-wg-gray-light/50">{t('app.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -60,7 +82,8 @@ export default function App() {
             {report && (
               <button
                 onClick={() => { setReport(null); setMode(null); setError(null) }}
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
+                className="ml-2 text-sm px-4 py-2 rounded-md border border-wg-red text-wg-red hover:bg-wg-red hover:text-white transition-colors duration-200 font-medium"
+                id="new-audit-btn"
               >
                 {t('app.newAudit')}
               </button>
@@ -69,72 +92,121 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      {/* ── Main Content ────────────────────────────── */}
+      <main className="max-w-6xl mx-auto px-6 py-10 relative z-10">
+
+        {/* Method Selection */}
         {!report && !mode && (
-          <div className="flex flex-col items-center gap-8 mt-16">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('app.selectMethod')}</h2>
+          <div className="flex flex-col items-center gap-8 mt-16 animate-fade-in">
+            <h2 className="text-2xl font-medium text-wg-headline dark:text-white">
+              <span className="wg-accent mr-2">&gt;</span>
+              {t('app.selectMethod')}
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl">
               <button
                 onClick={() => setMode('upload')}
-                className="p-8 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-500 dark:hover:bg-gray-800 transition group"
+                className="p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/40 bg-white dark:bg-wg-headline/15 hover:border-wg-red dark:hover:border-wg-red transition-all duration-300 group text-left"
+                id="select-upload"
               >
-                <div className="text-4xl mb-4">&#128194;</div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 transition">{t('upload.cardTitle')}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('upload.cardDesc')}</p>
+                <div className="w-12 h-12 rounded-lg bg-wg-red/10 dark:bg-wg-red/20 flex items-center justify-center text-2xl mb-4 group-hover:bg-wg-red group-hover:text-white transition-colors duration-300">
+                  📄
+                </div>
+                <h3 className="text-lg font-medium text-wg-headline dark:text-white group-hover:text-wg-red dark:group-hover:text-wg-red transition-colors duration-200">
+                  {t('upload.cardTitle')}
+                </h3>
+                <p className="text-sm text-wg-body dark:text-wg-gray-light/60 mt-2">{t('upload.cardDesc')}</p>
               </button>
               <button
                 onClick={() => setMode('ssh')}
-                className="p-8 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-green-500 dark:hover:bg-gray-800 transition group"
+                className="p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/40 bg-white dark:bg-wg-headline/15 hover:border-wg-red dark:hover:border-wg-red transition-all duration-300 group text-left"
+                id="select-ssh"
               >
-                <div className="text-4xl mb-4">&#128274;</div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-green-500 dark:group-hover:text-green-400 transition">{t('ssh.cardTitle')}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('ssh.cardDesc')}</p>
+                <div className="w-12 h-12 rounded-lg bg-wg-red/10 dark:bg-wg-red/20 flex items-center justify-center text-2xl mb-4 group-hover:bg-wg-red group-hover:text-white transition-colors duration-300">
+                  🔐
+                </div>
+                <h3 className="text-lg font-medium text-wg-headline dark:text-white group-hover:text-wg-red dark:group-hover:text-wg-red transition-colors duration-200">
+                  {t('ssh.cardTitle')}
+                </h3>
+                <p className="text-sm text-wg-body dark:text-wg-gray-light/60 mt-2">{t('ssh.cardDesc')}</p>
               </button>
             </div>
           </div>
         )}
 
+        {/* Upload Form */}
         {!report && mode === 'upload' && (
-          <div className="max-w-xl mx-auto mt-10">
-            <button onClick={() => setMode(null)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 block">&larr; {t('app.back')}</button>
+          <div className="max-w-xl mx-auto mt-10 animate-slide-up">
+            <button
+              onClick={() => setMode(null)}
+              className="text-sm text-wg-body dark:text-wg-gray-light/50 hover:text-wg-red dark:hover:text-wg-red mb-6 block transition-colors font-medium"
+            >
+              &larr; {t('app.back')}
+            </button>
             <UploadForm onSubmit={handleResult} loading={loading} />
           </div>
         )}
 
+        {/* SSH Form */}
         {!report && mode === 'ssh' && (
-          <div className="max-w-xl mx-auto mt-10">
-            <button onClick={() => setMode(null)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 block">&larr; {t('app.back')}</button>
+          <div className="max-w-xl mx-auto mt-10 animate-slide-up">
+            <button
+              onClick={() => setMode(null)}
+              className="text-sm text-wg-body dark:text-wg-gray-light/50 hover:text-wg-red dark:hover:text-wg-red mb-6 block transition-colors font-medium"
+            >
+              &larr; {t('app.back')}
+            </button>
             <ConnectionForm onSubmit={handleResult} loading={loading} />
           </div>
         )}
 
+        {/* Error */}
         {error && (
-          <div className="max-w-xl mx-auto mt-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 text-sm">
-            {error}
+          <div className="max-w-xl mx-auto mt-6 p-4 rounded-xl bg-wg-red/5 dark:bg-wg-red/10 border border-wg-red/20 text-wg-red text-sm animate-fade-in" id="error-banner">
+            <span className="font-semibold mr-1">⚠</span> {error}
           </div>
         )}
 
+        {/* Loading */}
         {loading && (
-          <div className="flex justify-center mt-20">
-            <div className="w-12 h-12 border-4 border-gray-300 dark:border-gray-700 border-t-blue-500 rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center justify-center mt-20 gap-4 animate-fade-in">
+            <div className="w-12 h-12 border-4 border-wg-gray-light dark:border-wg-headline border-t-wg-red rounded-full animate-spin"></div>
+            <p className="text-sm text-wg-body dark:text-wg-gray-light/50">{t('app.subtitle')}</p>
           </div>
         )}
 
+        {/* Results */}
         {report && (
-          <div className="space-y-10">
+          <div className="space-y-10 animate-fade-in">
             <DeviceInfoCard info={report.device_info} />
             <ScoreGauge score={report.score} />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('app.auditResults')}</h2>
+              <h2 className="text-lg font-medium text-wg-headline dark:text-white mb-4">
+                <span className="wg-accent mr-2">&gt;</span>
+                {t('app.auditResults')}
+              </h2>
               <div className="space-y-4">
-                {sortedResults.map((r) => (
-                  <AuditCard key={r.rule_id} result={r} />
+                {sortedResults.map((r, i) => (
+                  <div key={r.rule_id} style={{ animationDelay: `${i * 60}ms` }}>
+                    <AuditCard result={r} />
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* ── Footer ──────────────────────────────────── */}
+      <footer className="relative z-10 border-t border-wg-gray-light dark:border-wg-headline/20 py-6 mt-10">
+        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
+          <p className="text-xs text-wg-body dark:text-wg-gray-light/40">
+            © {new Date().getFullYear()} WatchGuard Technologies, Inc. All rights reserved.
+          </p>
+          <p className="text-xs text-wg-body/60 dark:text-wg-gray-light/30">
+            Firebox Auditor v1.0
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

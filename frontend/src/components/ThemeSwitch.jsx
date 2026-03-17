@@ -17,10 +17,17 @@ export default function ThemeSwitch() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-lg transition hover:opacity-80"
+      className="relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-wg-red/40"
+      style={{ backgroundColor: dark ? '#2D3237' : '#EAEAEA' }}
       title={dark ? 'Light Mode' : 'Dark Mode'}
+      id="theme-toggle"
     >
-      {dark ? '\u2600\uFE0F' : '\uD83C\uDF19'}
+      <span
+        className="absolute top-1 left-1 w-6 h-6 rounded-full bg-white dark:bg-wg-red flex items-center justify-center text-sm shadow-md transition-all duration-300"
+        style={{ transform: dark ? 'translateX(24px)' : 'translateX(0)' }}
+      >
+        {dark ? '🌙' : '☀️'}
+      </span>
     </button>
   )
 }

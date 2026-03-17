@@ -18,11 +18,14 @@ export default function UploadForm({ onSubmit, loading }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-8 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-5">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('upload.title')}</h3>
+    <form onSubmit={handleSubmit} className="wg-card p-8 rounded-xl border border-wg-gray-light dark:border-wg-headline/50 bg-white dark:bg-wg-headline/20 wg-concrete space-y-5" id="upload-form">
+      <h3 className="text-lg font-medium text-wg-headline dark:text-white">
+        <span className="wg-accent mr-1">&gt;</span>
+        {t('upload.title')}
+      </h3>
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-10 text-center cursor-pointer hover:border-blue-500 transition"
+        className="border-2 border-dashed border-wg-gray-light dark:border-wg-headline rounded-xl p-10 text-center cursor-pointer hover:border-wg-red/50 dark:hover:border-wg-red/40 transition-colors duration-200 group"
       >
         <input
           ref={inputRef}
@@ -32,18 +35,23 @@ export default function UploadForm({ onSubmit, loading }) {
           onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
         />
         {fileName ? (
-          <p className="text-blue-500 dark:text-blue-400 font-medium">{fileName}</p>
+          <div>
+            <p className="text-wg-red font-medium text-lg">{fileName}</p>
+            <p className="text-wg-body text-xs mt-1">{t('upload.dropzoneHint')}</p>
+          </div>
         ) : (
           <div>
-            <p className="text-gray-500 dark:text-gray-400">{t('upload.dropzone')}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">{t('upload.dropzoneHint')}</p>
+            <div className="text-4xl mb-3 opacity-60 group-hover:opacity-100 transition-opacity">📂</div>
+            <p className="text-wg-body dark:text-wg-gray-light/70 font-medium">{t('upload.dropzone')}</p>
+            <p className="text-xs text-wg-body/60 dark:text-wg-gray-light/40 mt-1">{t('upload.dropzoneHint')}</p>
           </div>
         )}
       </div>
       <button
         type="submit"
         disabled={loading || !fileName}
-        className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition disabled:opacity-50"
+        className="w-full py-3 rounded-md bg-wg-red hover:bg-wg-red-hover text-white font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        id="upload-submit"
       >
         {loading ? t('upload.loading') : t('upload.submit')}
       </button>
