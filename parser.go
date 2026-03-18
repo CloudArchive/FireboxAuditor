@@ -275,8 +275,8 @@ type HTTPProxyAction struct {
 	GatewayAV  string `xml:"anti-virus>enabled"`
 	// APT Blocker: <apt-enabled>true</apt-enabled>
 	APTBlocker string `xml:"apt-enabled"`
-	// WebBlocker: <filter><helper-name>ProfileName</helper-name> — non-empty means configured
-	WebBlocker string `xml:"filter>helper-name"`
+	// WebBlocker: lives under request>uri>filter>helper-name — non-empty means configured
+	WebBlocker string `xml:"request>uri>filter>helper-name"`
 }
 
 type HTTPSProxyAction struct {
