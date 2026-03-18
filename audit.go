@@ -95,7 +95,7 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 	switch {
 	case pa.HTTP != nil:
 		ps.GatewayAV = boolVal(pa.HTTP.GatewayAV)
-		ps.WebBlocker = boolVal(pa.HTTP.WebBlocker)
+		ps.WebBlocker = pa.HTTP.WebBlocker != "" // profile name, not bool
 		ps.APTBlocker = boolVal(pa.HTTP.APTBlocker)
 
 	case pa.HTTPS != nil:
