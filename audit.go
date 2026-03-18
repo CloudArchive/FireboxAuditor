@@ -92,10 +92,19 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 
 	boolVal := func(s string) bool { return s == "1" || s == "true" }
 
+	setWebBlocker := func(profile string) {
+		if profile != "" {
+			ps.WebBlocker = true
+			if ps.WebBlockerProfile == "" {
+				ps.WebBlockerProfile = profile
+			}
+		}
+	}
+
 	switch {
 	case pa.HTTP != nil:
 		ps.GatewayAV = boolVal(pa.HTTP.GatewayAV)
-		ps.WebBlocker = pa.HTTP.WebBlocker != "" // profile name, not bool
+		setWebBlocker(pa.HTTP.WebBlocker)
 		ps.APTBlocker = boolVal(pa.HTTP.APTBlocker)
 
 	case pa.HTTPS != nil:
@@ -105,7 +114,7 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 			if sub, ok := proxyMap[pa.HTTPS.RedirectTo]; ok && sub.HTTP != nil {
 				ps.GatewayAV = boolVal(sub.HTTP.GatewayAV)
 				ps.APTBlocker = boolVal(sub.HTTP.APTBlocker)
-				ps.WebBlocker = sub.HTTP.WebBlocker != ""
+				setWebBlocker(sub.HTTP.WebBlocker)
 			}
 		}
 		// wb-inspect on HTTPS itself also signals WebBlocker
@@ -126,9 +135,7 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 				if boolVal(sub.HTTP.GatewayAV) {
 					ps.GatewayAV = true
 				}
-				if sub.HTTP.WebBlocker != "" {
-					ps.WebBlocker = true
-				}
+				setWebBlocker(sub.HTTP.WebBlocker)
 				if boolVal(sub.HTTP.APTBlocker) {
 					ps.APTBlocker = true
 				}
@@ -139,9 +146,7 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 						if boolVal(httpSub.HTTP.GatewayAV) {
 							ps.GatewayAV = true
 						}
-						if httpSub.HTTP.WebBlocker != "" {
-							ps.WebBlocker = true
-						}
+						setWebBlocker(httpSub.HTTP.WebBlocker)
 						if boolVal(httpSub.HTTP.APTBlocker) {
 							ps.APTBlocker = true
 						}

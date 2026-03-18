@@ -134,6 +134,10 @@
     "on": "On",
     "off": "Off",
     "servicesDesc": "Proxy security services attached to this policy",
+    "attachedServicesDesc": "Named services configured on this policy",
+    "proxyAction": "Proxy Action",
+    "appControl": "Application Control",
+    "webBlockerProfile": "WebBlocker Profile",
     "tab": {
       "general": "General",
       "connections": "Connections",

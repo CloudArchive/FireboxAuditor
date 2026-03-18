@@ -134,6 +134,10 @@
     "on": "Açık",
     "off": "Kapalı",
     "servicesDesc": "Bu politikaya bağlı proxy güvenlik servisleri",
+    "attachedServicesDesc": "Bu politikada yapılandırılmış isimli servisler",
+    "proxyAction": "Proxy Action",
+    "appControl": "Application Control",
+    "webBlockerProfile": "WebBlocker Profili",
     "tab": {
       "general": "Genel",
       "connections": "Bağlantılar",

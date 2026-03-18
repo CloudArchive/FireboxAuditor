@@ -219,17 +219,39 @@ function ServicesTab({ policy, t }) {
     { label: 'APT Blocker', active: ps.apt_blocker },
   ]
 
+  const namedServices = [
+    { label: t('policyDetail.proxyAction'), value: policy.proxy },
+    { label: t('policyDetail.appControl'), value: policy.app_action },
+    { label: t('policyDetail.webBlockerProfile'), value: ps.web_blocker_profile },
+  ].filter(s => s.value)
+
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-wg-body dark:text-wg-gray-light/50 mb-2">
-        {t('policyDetail.servicesDesc')}
-      </p>
-      {items.map(item => (
-        <div key={item.label} className="flex items-center justify-between">
-          <span className="text-sm text-wg-headline dark:text-wg-gray-light">{item.label}</span>
-          <StatusBadge active={item.active} label={item.active ? t('policyDetail.on') : t('policyDetail.off')} />
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <p className="text-xs text-wg-body dark:text-wg-gray-light/50">
+          {t('policyDetail.servicesDesc')}
+        </p>
+        {items.map(item => (
+          <div key={item.label} className="flex items-center justify-between">
+            <span className="text-sm text-wg-headline dark:text-wg-gray-light">{item.label}</span>
+            <StatusBadge active={item.active} label={item.active ? t('policyDetail.on') : t('policyDetail.off')} />
+          </div>
+        ))}
+      </div>
+
+      {namedServices.length > 0 && (
+        <div className="pt-3 border-t border-wg-gray-light dark:border-wg-headline/20 space-y-3">
+          <p className="text-xs text-wg-body dark:text-wg-gray-light/50">
+            {t('policyDetail.attachedServicesDesc')}
+          </p>
+          {namedServices.map(s => (
+            <div key={s.label} className="flex items-center justify-between gap-3">
+              <span className="text-sm text-wg-headline dark:text-wg-gray-light shrink-0">{s.label}</span>
+              <span className="text-xs font-mono text-wg-body dark:text-wg-gray-light/60 truncate text-right">{s.value}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }

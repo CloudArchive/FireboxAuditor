@@ -214,10 +214,11 @@ type NATSettings struct {
 }
 
 type PolicyProxyServices struct {
-	GatewayAV  bool `json:"gateway_av"`
-	WebBlocker bool `json:"web_blocker"`
-	APTBlocker bool `json:"apt_blocker"`
-	IPS        bool `json:"ips"`
+	GatewayAV       bool   `json:"gateway_av"`
+	WebBlocker      bool   `json:"web_blocker"`
+	WebBlockerProfile string `json:"web_blocker_profile,omitempty"`
+	APTBlocker      bool   `json:"apt_blocker"`
+	IPS             bool   `json:"ips"`
 }
 
 type Policy struct {
