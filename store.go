@@ -25,6 +25,7 @@ type AuditRecord struct {
 
 type EnrichData struct {
 	SerialNumber string            `json:"serial_number"`
+	FullVersion  string            `json:"full_version,omitempty"`
 	UpTime       string            `json:"up_time"`
 	MemoryUsage  string            `json:"memory_usage"`
 	CPUUsage     string            `json:"cpu_usage"`

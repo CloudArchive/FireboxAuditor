@@ -234,6 +234,7 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 
 	enrich := &EnrichData{
 		SerialNumber: sysInfo.SerialNumber,
+		FullVersion:  sysInfo.Version,
 		UpTime:       sysInfo.UpTime,
 		MemoryUsage:  sysInfo.MemoryUsage,
 		CPUUsage:     sysInfo.CPUUsage,

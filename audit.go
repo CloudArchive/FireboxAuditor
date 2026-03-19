@@ -68,6 +68,12 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		natMap[nr.Name] = nr
 	}
 
+	// Build address-group lookup for resolving IP addresses
+	addrGroups := make(map[string]AddressGroup)
+	for _, ag := range cfg.AddressGroupList {
+		addrGroups[ag.Name] = ag
+	}
+
 	// Assign order, populate log settings, service ports, NAT details, and proxy services
 	for i := range cfg.PolicyList.Policies {
 		cfg.PolicyList.Policies[i].Order = i + 1
@@ -85,21 +91,10 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 			p.ServicePorts = ServicePortSummary(svc)
 		}
 
-		// Resolve NAT references to actual NAT rule details
-		if p.NAT != nil {
-			rn := &ResolvedNAT{}
-			if p.NAT.Dynamic != "" {
-				if nr, ok := natMap[p.NAT.Dynamic]; ok {
-					rn.Dynamic = summarizeNATRule(nr)
-				}
-			}
-			if p.NAT.Static != "" {
-				if nr, ok := natMap[p.NAT.Static]; ok {
-					rn.Static = summarizeNATRule(nr)
-				}
-			}
-			if rn.Dynamic != nil || rn.Static != nil {
-				p.ResolvedNAT = rn
+		// Resolve NAT reference to actual NAT rule details
+		if p.NATRef != "" {
+			if nr, ok := natMap[p.NATRef]; ok {
+				p.ResolvedNAT = resolveNATRule(nr, addrGroups)
 			}
 		}
 
@@ -108,12 +103,6 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 				p.ProxyServices = resolveProxyServices(pa, proxyMap, p.IPSMonitor)
 			}
 		}
-	}
-
-	// Build address-group lookup for resolving IP addresses
-	addrGroups := make(map[string]AddressGroup)
-	for _, ag := range cfg.AddressGroupList {
-		addrGroups[ag.Name] = ag
 	}
 
 	// Merge alias sources and resolve members
@@ -227,17 +216,41 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 	return ps
 }
 
-// summarizeNATRule creates a compact summary of a NAT rule for policy enrichment.
-func summarizeNATRule(nr NATRule) *NATRuleSummary {
-	s := &NATRuleSummary{
+// resolveNATRule creates a resolved NAT summary, following addr-name references
+// to address-groups to extract actual IPs. Produces members like "Any-External --> 10.168.1.250".
+func resolveNATRule(nr NATRule, addrGroups map[string]AddressGroup) *ResolvedNAT {
+	rn := &ResolvedNAT{
 		Name:     nr.Name,
 		TypeName: NATTypeName(nr.Type),
 	}
-	if len(nr.Items) > 0 {
-		s.IP = nr.Items[0].IP
-		s.AddrName = nr.Items[0].AddrName
+	for _, m := range nr.Items {
+		iface := m.Interface
+		if iface == "" {
+			iface = m.ExtAddrName
+		}
+
+		// Resolve addr-name to actual IP via address-group lookup
+		targetIP := m.IP
+		if targetIP == "" && m.AddrName != "" {
+			if ag, ok := addrGroups[m.AddrName]; ok {
+				for _, gm := range ag.Members {
+					if s := resolveAddressGroupMember(gm); s != "" {
+						targetIP = s
+						break
+					}
+				}
+			}
+		}
+
+		if iface != "" && targetIP != "" {
+			rn.Members = append(rn.Members, fmt.Sprintf("%s --> %s", iface, targetIP))
+		} else if targetIP != "" {
+			rn.Members = append(rn.Members, targetIP)
+		} else if iface != "" {
+			rn.Members = append(rn.Members, iface)
+		}
 	}
-	return s
+	return rn
 }
 
 // extractGlobalSecurity reads global security toggles from system-parameters.

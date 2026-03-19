@@ -11,6 +11,105 @@ import (
 // Package-level compiled regex for serial number extraction
 var snRe = regexp.MustCompile(`SN\s+(\S+)`)
 
+// wgTimeZone maps WatchGuard's internal timezone index to IANA timezone string.
+// The index list is based on the WatchGuard firmware timezone enumeration.
+func wgTimeZone(idx int) string {
+	zones := map[int]string{
+		0: "UTC-12:00 (Dateline)",
+		1: "UTC-11:00 (Samoa)",
+		2: "UTC-10:00 (Hawaii)",
+		3: "UTC-09:00 (Alaska)",
+		4: "UTC-08:00 (Pacific Time)",
+		5: "UTC-07:00 (Arizona)",
+		6: "UTC-07:00 (Mountain Time)",
+		7: "UTC-06:00 (Central America)",
+		8: "UTC-06:00 (Central Time)",
+		9: "UTC-06:00 (Saskatchewan)",
+		10: "UTC-06:00 (Mexico City)",
+		11: "UTC-05:00 (Eastern Time)",
+		12: "UTC-05:00 (Indiana)",
+		13: "UTC-05:00 (Bogota/Lima)",
+		14: "UTC-04:00 (Atlantic Time)",
+		15: "UTC-04:00 (Caracas)",
+		16: "UTC-04:00 (Santiago)",
+		17: "UTC-03:30 (Newfoundland)",
+		18: "UTC-03:00 (Buenos Aires)",
+		19: "UTC-03:00 (Greenland)",
+		20: "UTC-03:00 (Brasilia)",
+		21: "UTC-02:00 (Mid-Atlantic)",
+		22: "UTC-01:00 (Azores)",
+		23: "UTC-01:00 (Cape Verde)",
+		24: "UTC+00:00 (London/Dublin)",
+		25: "UTC+00:00 (Casablanca)",
+		26: "UTC+01:00 (Amsterdam/Berlin)",
+		27: "UTC+01:00 (Belgrade)",
+		28: "UTC+01:00 (Brussels/Paris)",
+		29: "UTC+01:00 (Sarajevo)",
+		30: "UTC+01:00 (West Central Africa)",
+		31: "UTC+02:00 (Athens/Istanbul)",
+		32: "UTC+02:00 (Bucharest)",
+		33: "UTC+02:00 (Cairo)",
+		34: "UTC+02:00 (Harare/Pretoria)",
+		35: "UTC+02:00 (Helsinki/Kyiv)",
+		36: "UTC+02:00 (Jerusalem)",
+		37: "UTC+03:00 (Baghdad)",
+		38: "UTC+03:00 (Kuwait/Riyadh)",
+		39: "UTC+03:00 (Moscow)",
+		40: "UTC+03:00 (Nairobi)",
+		41: "UTC+03:30 (Tehran)",
+		42: "UTC+04:00 (Abu Dhabi/Muscat)",
+		43: "UTC+04:00 (Baku/Tbilisi)",
+		44: "UTC+04:30 (Kabul)",
+		45: "UTC+05:00 (Islamabad/Karachi)",
+		46: "UTC+05:00 (Ekaterinburg)",
+		47: "UTC+05:30 (Mumbai/Kolkata)",
+		48: "UTC+05:45 (Kathmandu)",
+		49: "UTC+06:00 (Almaty/Dhaka)",
+		50: "UTC+06:00 (Sri Jayawardenepura)",
+		51: "UTC+06:30 (Rangoon)",
+		52: "UTC+07:00 (Bangkok/Hanoi)",
+		53: "UTC+07:00 (Krasnoyarsk)",
+		54: "UTC+08:00 (Beijing/Hong Kong)",
+		55: "UTC+08:00 (Kuala Lumpur/Singapore)",
+		56: "UTC+08:00 (Taipei)",
+		57: "UTC+08:00 (Perth)",
+		58: "UTC+08:00 (Irkutsk)",
+		59: "UTC+09:00 (Seoul)",
+		60: "UTC+09:00 (Tokyo)",
+		61: "UTC+09:00 (Yakutsk)",
+		62: "UTC+09:30 (Darwin)",
+		63: "UTC+09:30 (Adelaide)",
+		64: "UTC+10:00 (Canberra/Sydney)",
+		65: "UTC+10:00 (Brisbane)",
+		66: "UTC+10:00 (Hobart)",
+		67: "UTC+10:00 (Vladivostok)",
+		68: "UTC+10:00 (Guam)",
+		69: "UTC+11:00 (Magadan/Solomon Is.)",
+		70: "UTC+12:00 (Auckland/Wellington)",
+		71: "UTC+12:00 (Fiji)",
+		72: "UTC+13:00 (Nuku'alofa)",
+		73: "UTC+02:00 (Chisinau)",
+		74: "UTC+02:00 (Amman)",
+		75: "UTC+03:00 (Europe/Istanbul)",
+		76: "UTC-04:30 (Caracas)",
+		77: "UTC+08:00 (Ulaanbaatar)",
+		78: "UTC+12:00 (Petropavlovsk-Kamchatsky)",
+		79: "UTC+02:00 (Beirut)",
+		80: "UTC+01:00 (Windhoek)",
+		81: "UTC+04:00 (Yerevan)",
+		82: "UTC+00:00 (UTC)",
+		83: "UTC-03:00 (Montevideo)",
+		84: "UTC-04:00 (Asuncion)",
+		85: "UTC+02:00 (Kaliningrad)",
+		86: "UTC+06:00 (Novosibirsk)",
+		87: "UTC+11:00 (Srednekolymsk)",
+	}
+	if tz, ok := zones[idx]; ok {
+		return tz
+	}
+	return fmt.Sprintf("Unknown (index %d)", idx)
+}
+
 // Top-level WatchGuard configuration
 type WatchGuardConfig struct {
 	XMLName           xml.Name          `xml:"profile" json:"-"`
@@ -32,10 +131,42 @@ type SystemParameters struct {
 	Interfaces      []Interface      `xml:"interface-list>interface"`
 	IKECerts        []IKECert        `xml:"ike>ike-cert-list>cert"`
 	DNSServers      []string         `xml:"dns-server-list>dns-entry"`
+	LogConf         *LogConf         `xml:"log-conf"`
+	CommonLogging   *CommonLogging   `xml:"common-logging"`
+	DNSWatch        *DNSWatchConf    `xml:"dnswatch"`
 	IPS             *GlobalIPS       `xml:"ips"`
 	APT             *GlobalAPT       `xml:"apt"`
 	BotnetDetection *GlobalBotnet    `xml:"botnet-detection"`
 	DoSPrevention   []DoSItem        `xml:"dos-prevention>dos-item"`
+}
+
+type LogConf struct {
+	RemoteLogging *RemoteLogging `xml:"remote-logging"`
+}
+
+type RemoteLogging struct {
+	Enabled string         `xml:"enabled"`
+	Entries []LoggingEntry `xml:"remote-logging-list>logging-entry"`
+}
+
+type LoggingEntry struct {
+	ServerIP   string `xml:"server-ip"`
+	ServerPort string `xml:"server-port"`
+}
+
+type CommonLogging struct {
+	Enabled   string     `xml:"enabled"`
+	LogServer *LogServer `xml:"log-server"`
+}
+
+type LogServer struct {
+	Type string `xml:"type"`
+	Host string `xml:"host"`
+	Port string `xml:"port"`
+}
+
+type DNSWatchConf struct {
+	Enabled string `xml:"enabled"`
 }
 
 type DeviceConf struct {
@@ -44,6 +175,7 @@ type DeviceConf struct {
 	DomainName    string `xml:"domain-name"`
 	SystemContact string `xml:"system-contact"`
 	Location      string `xml:"location"`
+	TimeZone      int    `xml:"time-zone"`
 }
 
 type Interface struct {
@@ -98,8 +230,12 @@ type DeviceInfo struct {
 	DomainName    string          `json:"domain_name"`
 	Contact       string          `json:"contact"`
 	Location      string          `json:"location"`
+	TimeZone      string          `json:"time_zone"`
 	DNSServers    []string        `json:"dns_servers"`
 	Interfaces    []InterfaceInfo `json:"interfaces"`
+	LogServer     string          `json:"log_server"`
+	SyslogServer  string          `json:"syslog_server,omitempty"`
+	DNSWatch      string          `json:"dnswatch"`
 }
 
 type InterfaceInfo struct {
@@ -120,6 +256,7 @@ func ExtractDeviceInfo(cfg *WatchGuardConfig) DeviceInfo {
 		DomainName:   cfg.SystemParameters.DeviceConf.DomainName,
 		Contact:      cfg.SystemParameters.DeviceConf.SystemContact,
 		Location:     cfg.SystemParameters.DeviceConf.Location,
+		TimeZone:     wgTimeZone(cfg.SystemParameters.DeviceConf.TimeZone),
 		DNSServers:   cfg.SystemParameters.DNSServers,
 	}
 
@@ -129,6 +266,40 @@ func ExtractDeviceInfo(cfg *WatchGuardConfig) DeviceInfo {
 			info.SerialNumber = m[1]
 			break
 		}
+	}
+
+	// Log server (WatchGuard Dimension / WSM)
+	if cl := cfg.SystemParameters.CommonLogging; cl != nil {
+		if cl.LogServer != nil && cl.LogServer.Host != "" {
+			info.LogServer = cl.LogServer.Host + ":" + cl.LogServer.Port
+		}
+		if cl.Enabled != "1" && cl.Enabled != "true" {
+			info.LogServer = "Disabled"
+		}
+	} else {
+		info.LogServer = "Not Configured"
+	}
+
+	// Syslog (remote logging)
+	if lc := cfg.SystemParameters.LogConf; lc != nil && lc.RemoteLogging != nil {
+		rl := lc.RemoteLogging
+		if rl.Enabled == "1" || rl.Enabled == "true" {
+			if len(rl.Entries) > 0 {
+				e := rl.Entries[0]
+				info.SyslogServer = e.ServerIP + ":" + e.ServerPort
+			}
+		}
+	}
+
+	// DNSWatch
+	if dw := cfg.SystemParameters.DNSWatch; dw != nil {
+		if dw.Enabled == "1" || dw.Enabled == "true" {
+			info.DNSWatch = "Enabled"
+		} else {
+			info.DNSWatch = "Disabled"
+		}
+	} else {
+		info.DNSWatch = "Not Configured"
 	}
 
 	// Extract interface info
@@ -462,22 +633,11 @@ type PolicyList struct {
 	Policies []Policy `xml:"policy"`
 }
 
-type NATSettings struct {
-	Dynamic string `xml:"dynamic" json:"dynamic,omitempty"`
-	Static  string `xml:"static" json:"static,omitempty"`
-}
-
-// Resolved NAT detail attached to policy after enrichment
+// ResolvedNAT holds the enriched NAT detail for a policy.
 type ResolvedNAT struct {
-	Dynamic *NATRuleSummary `json:"dynamic,omitempty"`
-	Static  *NATRuleSummary `json:"static,omitempty"`
-}
-
-type NATRuleSummary struct {
-	Name     string `json:"name"`
-	TypeName string `json:"type_name"`
-	IP       string `json:"ip,omitempty"`
-	AddrName string `json:"addr_name,omitempty"`
+	Name     string   `json:"name"`
+	TypeName string   `json:"type_name"`
+	Members  []string `json:"members,omitempty"`
 }
 
 type PolicyProxyServices struct {
@@ -506,7 +666,7 @@ type Policy struct {
 	Proxy         string               `xml:"proxy" json:"proxy"`
 	IPSMonitor    string               `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
 	AppAction     string               `xml:"app-action" json:"app_action"`
-	NAT           *NATSettings         `xml:"nat" json:"nat,omitempty"`
+	NATRef        string               `xml:"nat" json:"nat_ref,omitempty"`
 	// Enriched fields populated after parsing
 	ServicePorts  string               `xml:"-" json:"service_ports,omitempty"`
 	ResolvedNAT   *ResolvedNAT         `xml:"-" json:"resolved_nat,omitempty"`
