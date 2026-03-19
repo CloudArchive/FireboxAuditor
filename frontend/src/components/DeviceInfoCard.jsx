@@ -148,14 +148,18 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onRe
         <SectionHeader icon="🔷" title={t('device.identitySection')} />
         <div className="space-y-0">
           {info?.model        && <Row label={t('device.model')}      value={info.model} />}
-          {info?.firmware_version && <Row label={t('device.firmware')} value={info.firmware_version} mono />}
+          {info?.firmware_version && <Row label={t('device.firmware')} value={enrichment?.full_version || info.firmware_version} mono />}
           {info?.system_name  && <Row label={t('device.systemName')} value={info.system_name} />}
           {info?.domain_name  && <Row label={t('device.domain')}     value={info.domain_name} />}
           {info?.contact      && <Row label={t('device.contact')}    value={info.contact} />}
           {info?.location     && <Row label={t('device.location')}   value={info.location} />}
+          {info?.time_zone    && <Row label={t('device.timezone')}   value={info.time_zone} />}
           {info?.dns_servers?.length > 0 && (
             <Row label={t('device.dns')} value={info.dns_servers.join(', ')} mono />
           )}
+          {info?.log_server   && <Row label={t('device.logServer')}  value={info.log_server} mono />}
+          {info?.syslog_server && <Row label={t('device.syslogServer')} value={info.syslog_server} mono />}
+          {info?.dnswatch     && <Row label={t('device.dnswatch')}   value={info.dnswatch} />}
         </div>
 
         {/* Interface table */}
