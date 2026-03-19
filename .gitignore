@@ -3,6 +3,7 @@ static/*
 !static/.gitkeep
 frontend/node_modules/
 .env
+data/users.json
 firebox-auditor
 .DS_Store
 /.agent
