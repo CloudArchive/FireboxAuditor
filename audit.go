@@ -62,10 +62,16 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		}
 	}
 
+	// Build address-group lookup for resolving IP addresses
+	addrGroups := make(map[string]AddressGroup)
+	for _, ag := range cfg.AddressGroupList {
+		addrGroups[ag.Name] = ag
+	}
+
 	// Merge alias sources and resolve members
 	allAliases := append(cfg.PolicyObjects.Aliases, cfg.AliasList...)
 	for i := range allAliases {
-		resolveAliasMembers(&allAliases[i])
+		resolveAliasMembers(&allAliases[i], addrGroups)
 	}
 
 	score := calculateScore(results)

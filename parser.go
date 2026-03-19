@@ -12,14 +12,15 @@ var snRe = regexp.MustCompile(`SN\s+(\S+)`)
 
 // Top-level WatchGuard configuration
 type WatchGuardConfig struct {
-	XMLName          xml.Name          `xml:"profile" json:"-"`
-	ForVersion       string            `xml:"for-version" json:"for_version"`
-	SystemParameters SystemParameters  `xml:"system-parameters" json:"system_parameters"`
-	PolicyObjects    PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
-	AliasList        []Alias           `xml:"alias-list>alias" json:"-"`
-	PolicyList       PolicyList        `xml:"policy-list" json:"policy_list"`
-	SecurityServices SecurityServices  `xml:"security-services" json:"security_services"`
-	ProxyActionList  ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
+	XMLName           xml.Name          `xml:"profile" json:"-"`
+	ForVersion        string            `xml:"for-version" json:"for_version"`
+	SystemParameters  SystemParameters  `xml:"system-parameters" json:"system_parameters"`
+	PolicyObjects     PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
+	AliasList         []Alias           `xml:"alias-list>alias" json:"-"`
+	AddressGroupList  []AddressGroup    `xml:"address-group-list>address-group" json:"-"`
+	PolicyList        PolicyList        `xml:"policy-list" json:"policy_list"`
+	SecurityServices  SecurityServices  `xml:"security-services" json:"security_services"`
+	ProxyActionList   ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
 }
 
 type SystemParameters struct {
@@ -219,6 +220,18 @@ type AliasMember struct {
 	AliasName string `xml:"alias-name"`
 }
 
+type AddressGroup struct {
+	Name    string               `xml:"name"`
+	Members []AddressGroupMember `xml:"addr-group-member>member"`
+}
+
+type AddressGroupMember struct {
+	Type       string `xml:"type"`
+	HostIPAddr string `xml:"host-ip-addr"`
+	IPRange    string `xml:"ip-network-addr"`
+	NetMask    string `xml:"ip-mask"`
+}
+
 // Name returns the alias name, preferring the attribute form over the element form.
 func (a Alias) Name() string {
 	if a.NameAttr != "" {
@@ -237,7 +250,8 @@ func (a Alias) MarshalJSON() ([]byte, error) {
 }
 
 // resolveAliasMembers populates the Members field from raw parsed data.
-func resolveAliasMembers(a *Alias) {
+// addrGroups maps address-group names to their resolved IP addresses.
+func resolveAliasMembers(a *Alias, addrGroups map[string]AddressGroup) {
 	if len(a.LegacyMembers) > 0 {
 		a.Members = a.LegacyMembers
 		return
@@ -253,7 +267,18 @@ func resolveAliasMembers(a *Alias) {
 				a.Members = append(a.Members, m.User)
 			}
 			if m.Address != "" && m.Address != "Any" {
-				a.Members = append(a.Members, m.Address)
+				// Try to resolve address-group reference to IP
+				if ag, ok := addrGroups[m.Address]; ok {
+					for _, gm := range ag.Members {
+						if gm.HostIPAddr != "" {
+							a.Members = append(a.Members, gm.HostIPAddr)
+						} else if gm.IPRange != "" && gm.NetMask != "" {
+							a.Members = append(a.Members, gm.IPRange+"/"+gm.NetMask)
+						}
+					}
+				} else {
+					a.Members = append(a.Members, m.Address)
+				}
 			}
 		default:
 			if m.AliasName != "" {
