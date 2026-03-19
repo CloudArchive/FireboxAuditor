@@ -21,11 +21,24 @@ type AuditResult struct {
 }
 
 type AuditReport struct {
-	DeviceInfo DeviceInfo    `json:"device_info"`
-	Score      int           `json:"score"`
-	Results    []AuditResult `json:"results"`
-	Policies   []Policy      `json:"policies"`
-	Aliases    []Alias       `json:"aliases"`
+	DeviceInfo       DeviceInfo            `json:"device_info"`
+	Score            int                   `json:"score"`
+	Results          []AuditResult         `json:"results"`
+	Policies         []Policy              `json:"policies"`
+	Aliases          []Alias               `json:"aliases"`
+	NATRules         []NATRule             `json:"nat_rules,omitempty"`
+	GlobalSecurity   *GlobalSecurityStatus `json:"global_security,omitempty"`
+}
+
+// GlobalSecurityStatus summarizes global security feature states.
+type GlobalSecurityStatus struct {
+	IPSEnabled             bool   `json:"ips_enabled"`
+	IPSFullScan            bool   `json:"ips_full_scan"`
+	APTEnabled             bool   `json:"apt_enabled"`
+	BotnetDetection        bool   `json:"botnet_detection"`
+	DoSPreventionEnabled   bool   `json:"dos_prevention_enabled"`
+	DoSEnabledRuleCount    int    `json:"dos_enabled_rule_count"`
+	DoSTotalRuleCount      int    `json:"dos_total_rule_count"`
 }
 
 func RunAudit(cfg *WatchGuardConfig) AuditReport {
@@ -43,7 +56,19 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		proxyMap[pa.Name] = pa
 	}
 
-	// Assign order, populate log settings and proxy services
+	// Build service lookup map
+	svcMap := make(map[string]ServiceDef)
+	for _, svc := range cfg.ServiceList {
+		svcMap[svc.Name] = svc
+	}
+
+	// Build NAT lookup map
+	natMap := make(map[string]NATRule)
+	for _, nr := range cfg.NATList {
+		natMap[nr.Name] = nr
+	}
+
+	// Assign order, populate log settings, service ports, NAT details, and proxy services
 	for i := range cfg.PolicyList.Policies {
 		cfg.PolicyList.Policies[i].Order = i + 1
 
@@ -53,6 +78,29 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		p.Logging = LogSettings{
 			Enabled:   p.LogRaw,
 			ForReport: p.LogForReport,
+		}
+
+		// Resolve service name to actual ports/protocols
+		if svc, ok := svcMap[p.Service]; ok {
+			p.ServicePorts = ServicePortSummary(svc)
+		}
+
+		// Resolve NAT references to actual NAT rule details
+		if p.NAT != nil {
+			rn := &ResolvedNAT{}
+			if p.NAT.Dynamic != "" {
+				if nr, ok := natMap[p.NAT.Dynamic]; ok {
+					rn.Dynamic = summarizeNATRule(nr)
+				}
+			}
+			if p.NAT.Static != "" {
+				if nr, ok := natMap[p.NAT.Static]; ok {
+					rn.Static = summarizeNATRule(nr)
+				}
+			}
+			if rn.Dynamic != nil || rn.Static != nil {
+				p.ResolvedNAT = rn
+			}
 		}
 
 		if p.Proxy != "" {
@@ -74,13 +122,18 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		resolveAliasMembers(&allAliases[i], addrGroups)
 	}
 
+	// Extract global security status
+	globalSec := extractGlobalSecurity(cfg)
+
 	score := calculateScore(results)
 	return AuditReport{
-		DeviceInfo: ExtractDeviceInfo(cfg),
-		Score:      score,
-		Results:    results,
-		Policies:   cfg.PolicyList.Policies,
-		Aliases:    allAliases,
+		DeviceInfo:     ExtractDeviceInfo(cfg),
+		Score:          score,
+		Results:        results,
+		Policies:       cfg.PolicyList.Policies,
+		Aliases:        allAliases,
+		NATRules:       cfg.NATList,
+		GlobalSecurity: globalSec,
 	}
 }
 
@@ -172,6 +225,47 @@ func resolveProxyServices(pa ProxyAction, proxyMap map[string]ProxyAction, ipsMo
 	}
 
 	return ps
+}
+
+// summarizeNATRule creates a compact summary of a NAT rule for policy enrichment.
+func summarizeNATRule(nr NATRule) *NATRuleSummary {
+	s := &NATRuleSummary{
+		Name:     nr.Name,
+		TypeName: NATTypeName(nr.Type),
+	}
+	if len(nr.Items) > 0 {
+		s.IP = nr.Items[0].IP
+		s.AddrName = nr.Items[0].AddrName
+	}
+	return s
+}
+
+// extractGlobalSecurity reads global security toggles from system-parameters.
+func extractGlobalSecurity(cfg *WatchGuardConfig) *GlobalSecurityStatus {
+	boolVal := func(s string) bool { return s == "1" || s == "true" }
+
+	gs := &GlobalSecurityStatus{}
+
+	if cfg.SystemParameters.IPS != nil {
+		gs.IPSEnabled = boolVal(cfg.SystemParameters.IPS.Enabled)
+		gs.IPSFullScan = boolVal(cfg.SystemParameters.IPS.FullScanMode)
+	}
+	if cfg.SystemParameters.APT != nil {
+		gs.APTEnabled = boolVal(cfg.SystemParameters.APT.Enabled)
+	}
+	if cfg.SystemParameters.BotnetDetection != nil {
+		gs.BotnetDetection = boolVal(cfg.SystemParameters.BotnetDetection.Enabled)
+	}
+
+	gs.DoSTotalRuleCount = len(cfg.SystemParameters.DoSPrevention)
+	for _, d := range cfg.SystemParameters.DoSPrevention {
+		if d.Enabled == 1 {
+			gs.DoSEnabledRuleCount++
+		}
+	}
+	gs.DoSPreventionEnabled = gs.DoSEnabledRuleCount > 0
+
+	return gs
 }
 
 // Rule 1 (Critical): Default passwords

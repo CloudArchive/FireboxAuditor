@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -19,16 +20,22 @@ type WatchGuardConfig struct {
 	AliasList         []Alias           `xml:"alias-list>alias" json:"-"`
 	AddressGroupList  []AddressGroup    `xml:"address-group-list>address-group" json:"-"`
 	PolicyList        PolicyList        `xml:"policy-list" json:"policy_list"`
+	ServiceList       []ServiceDef      `xml:"service-list>service" json:"-"`
+	NATList           []NATRule         `xml:"nat-list>nat" json:"-"`
 	SecurityServices  SecurityServices  `xml:"security-services" json:"security_services"`
 	ProxyActionList   ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
 }
 
 type SystemParameters struct {
-	AdminUsers  []AdminUser `xml:"admin-users>user"`
-	DeviceConf  DeviceConf  `xml:"device-conf"`
-	Interfaces  []Interface `xml:"interface-list>interface"`
-	IKECerts    []IKECert   `xml:"ike>ike-cert-list>cert"`
-	DNSServers  []string    `xml:"dns-server-list>dns-entry"`
+	AdminUsers      []AdminUser      `xml:"admin-users>user"`
+	DeviceConf      DeviceConf       `xml:"device-conf"`
+	Interfaces      []Interface      `xml:"interface-list>interface"`
+	IKECerts        []IKECert        `xml:"ike>ike-cert-list>cert"`
+	DNSServers      []string         `xml:"dns-server-list>dns-entry"`
+	IPS             *GlobalIPS       `xml:"ips"`
+	APT             *GlobalAPT       `xml:"apt"`
+	BotnetDetection *GlobalBotnet    `xml:"botnet-detection"`
+	DoSPrevention   []DoSItem        `xml:"dos-prevention>dos-item"`
 }
 
 type DeviceConf struct {
@@ -226,10 +233,175 @@ type AddressGroup struct {
 }
 
 type AddressGroupMember struct {
-	Type       string `xml:"type"`
-	HostIPAddr string `xml:"host-ip-addr"`
-	IPRange    string `xml:"ip-network-addr"`
-	NetMask    string `xml:"ip-mask"`
+	Type         string `xml:"type"`
+	HostIPAddr   string `xml:"host-ip-addr"`
+	IPNetAddr    string `xml:"ip-network-addr"`
+	IPMask       string `xml:"ip-mask"`
+	StartIPAddr  string `xml:"start-ip-addr"`
+	EndIPAddr    string `xml:"end-ip-addr"`
+	Domain       string `xml:"domain"`
+	DynamicAddrs string `xml:"dynamic-addrs"`
+}
+
+// resolveAddressGroupMember returns a human-readable string for an address group member.
+func resolveAddressGroupMember(m AddressGroupMember) string {
+	switch m.Type {
+	case "1": // Host IP
+		return m.HostIPAddr
+	case "2": // Subnet
+		if m.IPNetAddr != "" && m.IPMask != "" {
+			return m.IPNetAddr + "/" + m.IPMask
+		}
+	case "3": // IP Range
+		if m.StartIPAddr != "" && m.EndIPAddr != "" {
+			return m.StartIPAddr + "-" + m.EndIPAddr
+		}
+	case "8": // FQDN/Domain
+		if m.Domain != "" {
+			return "FQDN:" + m.Domain
+		}
+	case "10": // Dynamic address list
+		if m.DynamicAddrs != "" {
+			return "Dynamic:" + m.DynamicAddrs
+		}
+	}
+	// Fallback: return whatever non-empty field we have
+	if m.HostIPAddr != "" {
+		return m.HostIPAddr
+	}
+	return ""
+}
+
+// ── Service definitions ─────────────────────────────────────────────────────
+
+type ServiceDef struct {
+	Name        string          `xml:"name" json:"name"`
+	Description string          `xml:"description" json:"description,omitempty"`
+	Property    int             `xml:"property" json:"property"`
+	ProxyType   string          `xml:"proxy-type" json:"proxy_type,omitempty"`
+	Items       []ServiceMember `xml:"service-item>member" json:"items"`
+	IdleTimeout int             `xml:"idle-timeout" json:"idle_timeout"`
+}
+
+type ServiceMember struct {
+	Type       int `xml:"type" json:"type"`
+	Protocol   int `xml:"protocol" json:"protocol"`
+	ServerPort int `xml:"server-port" json:"server_port"`
+}
+
+// ProtocolName returns the human-readable protocol name for a protocol number.
+func ProtocolName(proto int) string {
+	switch proto {
+	case 0:
+		return "Any"
+	case 1:
+		return "ICMP"
+	case 6:
+		return "TCP"
+	case 17:
+		return "UDP"
+	case 47:
+		return "GRE"
+	case 50:
+		return "ESP"
+	case 51:
+		return "AH"
+	case 58:
+		return "ICMPv6"
+	default:
+		return fmt.Sprintf("IP/%d", proto)
+	}
+}
+
+// ServicePortSummary returns a compact string like "TCP/443, UDP/53".
+func ServicePortSummary(svc ServiceDef) string {
+	if len(svc.Items) == 0 {
+		return "any"
+	}
+	parts := make([]string, 0, len(svc.Items))
+	for _, m := range svc.Items {
+		proto := ProtocolName(m.Protocol)
+		if m.ServerPort == 0 && m.Protocol == 0 {
+			return "any"
+		}
+		if m.ServerPort == 0 {
+			parts = append(parts, proto)
+		} else {
+			parts = append(parts, fmt.Sprintf("%s/%d", proto, m.ServerPort))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// ── NAT rules ───────────────────────────────────────────────────────────────
+
+type NATRule struct {
+	Name        string      `xml:"name" json:"name"`
+	Description string      `xml:"description" json:"description,omitempty"`
+	Property    int         `xml:"property" json:"property"`
+	Type        int         `xml:"type" json:"type"`
+	Algorithm   int         `xml:"algorithm" json:"algorithm"`
+	ProxyARP    int         `xml:"proxy-arp" json:"proxy_arp"`
+	Items       []NATMember `xml:"nat-item>member" json:"items,omitempty"`
+}
+
+type NATMember struct {
+	AddrType    int    `xml:"addr-type" json:"addr_type"`
+	Port        int    `xml:"port" json:"port"`
+	IP          string `xml:"ip" json:"ip,omitempty"`
+	ExtAddrName string `xml:"ext-addr-name" json:"ext_addr_name,omitempty"`
+	Interface   string `xml:"interface" json:"interface,omitempty"`
+	AddrName    string `xml:"addr-name" json:"addr_name,omitempty"`
+}
+
+// NATTypeName returns a human-readable NAT type.
+func NATTypeName(t int) string {
+	switch t {
+	case 3:
+		return "Dynamic NAT"
+	case 4:
+		return "DNAT"
+	case 7:
+		return "SNAT"
+	default:
+		return fmt.Sprintf("NAT-Type-%d", t)
+	}
+}
+
+// ── Global security settings ────────────────────────────────────────────────
+
+type GlobalIPS struct {
+	Enabled      string          `xml:"enabled" json:"enabled"`
+	FullScanMode string          `xml:"full-scan-mode" json:"full_scan_mode"`
+	ThreatLevel  *IPSThreatLevel `xml:"threat-level" json:"threat_level,omitempty"`
+}
+
+type IPSThreatLevel struct {
+	Critical IPSThreatAction `xml:"critical" json:"critical"`
+	High     IPSThreatAction `xml:"high" json:"high"`
+	Medium   IPSThreatAction `xml:"medium" json:"medium"`
+	Low      IPSThreatAction `xml:"low" json:"low"`
+	Info     IPSThreatAction `xml:"info" json:"info"`
+}
+
+type IPSThreatAction struct {
+	Action string `xml:"action" json:"action"`
+	Alarm  string `xml:"alarm" json:"alarm"`
+	Log    string `xml:"log" json:"log"`
+}
+
+type GlobalAPT struct {
+	Enabled string `xml:"enabled" json:"enabled"`
+}
+
+type GlobalBotnet struct {
+	Enabled string `xml:"enabled" json:"enabled"`
+}
+
+type DoSItem struct {
+	Type      int `xml:"dos-type" json:"type"`
+	Enabled   int `xml:"dos-enable" json:"enabled"`
+	Threshold int `xml:"dos-threshold" json:"threshold"`
 }
 
 // Name returns the alias name, preferring the attribute form over the element form.
@@ -270,10 +442,8 @@ func resolveAliasMembers(a *Alias, addrGroups map[string]AddressGroup) {
 				// Try to resolve address-group reference to IP
 				if ag, ok := addrGroups[m.Address]; ok {
 					for _, gm := range ag.Members {
-						if gm.HostIPAddr != "" {
-							a.Members = append(a.Members, gm.HostIPAddr)
-						} else if gm.IPRange != "" && gm.NetMask != "" {
-							a.Members = append(a.Members, gm.IPRange+"/"+gm.NetMask)
+						if s := resolveAddressGroupMember(gm); s != "" {
+							a.Members = append(a.Members, s)
 						}
 					}
 				} else {
@@ -295,6 +465,19 @@ type PolicyList struct {
 type NATSettings struct {
 	Dynamic string `xml:"dynamic" json:"dynamic,omitempty"`
 	Static  string `xml:"static" json:"static,omitempty"`
+}
+
+// Resolved NAT detail attached to policy after enrichment
+type ResolvedNAT struct {
+	Dynamic *NATRuleSummary `json:"dynamic,omitempty"`
+	Static  *NATRuleSummary `json:"static,omitempty"`
+}
+
+type NATRuleSummary struct {
+	Name     string `json:"name"`
+	TypeName string `json:"type_name"`
+	IP       string `json:"ip,omitempty"`
+	AddrName string `json:"addr_name,omitempty"`
 }
 
 type PolicyProxyServices struct {
@@ -324,6 +507,9 @@ type Policy struct {
 	IPSMonitor    string               `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
 	AppAction     string               `xml:"app-action" json:"app_action"`
 	NAT           *NATSettings         `xml:"nat" json:"nat,omitempty"`
+	// Enriched fields populated after parsing
+	ServicePorts  string               `xml:"-" json:"service_ports,omitempty"`
+	ResolvedNAT   *ResolvedNAT         `xml:"-" json:"resolved_nat,omitempty"`
 	ProxyServices *PolicyProxyServices `xml:"-" json:"proxy_services,omitempty"`
 }
 
