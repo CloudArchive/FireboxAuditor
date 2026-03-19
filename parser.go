@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"regexp"
 	"strings"
@@ -200,8 +201,26 @@ type PolicyObjects struct {
 }
 
 type Alias struct {
-	Name    string   `xml:"name,attr" json:"name"`
-	Members []string `xml:"member" json:"members"`
+	NameAttr    string   `xml:"name,attr" json:"-"`
+	NameElement string   `xml:"name" json:"-"`
+	Members     []string `xml:"member" json:"members"`
+}
+
+// Name returns the alias name, preferring the attribute form over the element form.
+func (a Alias) Name() string {
+	if a.NameAttr != "" {
+		return a.NameAttr
+	}
+	return a.NameElement
+}
+
+// MarshalJSON implements custom JSON marshaling to output "name" field.
+func (a Alias) MarshalJSON() ([]byte, error) {
+	type plain struct {
+		Name    string   `json:"name"`
+		Members []string `json:"members"`
+	}
+	return json.Marshal(plain{Name: a.Name(), Members: a.Members})
 }
 
 type PolicyList struct {

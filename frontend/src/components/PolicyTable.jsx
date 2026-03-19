@@ -1,7 +1,20 @@
 import { useI18n } from '../i18n/I18nContext'
 
-export default function PolicyTable({ policies, highlightedIndices = [], onSelectPolicy }) {
+export default function PolicyTable({ policies, aliases = [], highlightedIndices = [], onSelectPolicy }) {
   const { t } = useI18n()
+
+  const resolveAlias = (name) => {
+    const alias = aliases.find(a => a.name === name)
+    return alias?.members?.length ? alias.members : null
+  }
+
+  const formatAliases = (aliasList) => {
+    if (!aliasList?.length) return '—'
+    return aliasList.map(name => {
+      const members = resolveAlias(name)
+      return members ? members.join(', ') : name
+    }).join(', ')
+  }
 
   const getActionIcon = (policy) => {
     if (policy.enabled === 'false' || policy.enabled === '0') return '⚪'
@@ -52,8 +65,8 @@ export default function PolicyTable({ policies, highlightedIndices = [], onSelec
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-xs text-wg-body dark:text-wg-gray-light/70">{policy.type}</td>
-                    <td className="px-4 py-3.5 text-xs text-wg-body dark:text-wg-gray-light/70">{policy.from?.aliases?.join(', ')}</td>
-                    <td className="px-4 py-3.5 text-xs text-wg-body dark:text-wg-gray-light/70">{policy.to?.aliases?.join(', ')}</td>
+                    <td className="px-4 py-3.5 text-xs text-wg-body dark:text-wg-gray-light/70">{formatAliases(policy.from?.aliases)}</td>
+                    <td className="px-4 py-3.5 text-xs text-wg-body dark:text-wg-gray-light/70">{formatAliases(policy.to?.aliases)}</td>
                     <td className="px-4 py-3.5 text-xs font-mono text-wg-body dark:text-wg-gray-light/70">{policy.service}</td>
                   </tr>
                 )

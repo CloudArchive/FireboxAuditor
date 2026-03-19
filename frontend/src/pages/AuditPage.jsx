@@ -173,6 +173,7 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
         {report?.policies?.length > 0 && (
           <PolicyTable
             policies={report.policies}
+            aliases={report.aliases || []}
             highlightedIndices={highlightedIndices}
             onSelectPolicy={setSelectedPolicy}
           />
