@@ -16,6 +16,7 @@ type WatchGuardConfig struct {
 	ForVersion       string            `xml:"for-version" json:"for_version"`
 	SystemParameters SystemParameters  `xml:"system-parameters" json:"system_parameters"`
 	PolicyObjects    PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
+	AliasList        []Alias           `xml:"alias-list>alias" json:"-"`
 	PolicyList       PolicyList        `xml:"policy-list" json:"policy_list"`
 	SecurityServices SecurityServices  `xml:"security-services" json:"security_services"`
 	ProxyActionList  ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
@@ -201,9 +202,21 @@ type PolicyObjects struct {
 }
 
 type Alias struct {
-	NameAttr    string   `xml:"name,attr" json:"-"`
-	NameElement string   `xml:"name" json:"-"`
-	Members     []string `xml:"member" json:"members"`
+	NameAttr    string        `xml:"name,attr" json:"-"`
+	NameElement string        `xml:"name" json:"-"`
+	RawMembers  []AliasMember `xml:"alias-member-list>alias-member" json:"-"`
+	// Legacy format: <member>value</member>
+	LegacyMembers []string `xml:"member" json:"-"`
+	// Members is populated after parsing
+	Members []string `json:"members" xml:"-"`
+}
+
+type AliasMember struct {
+	Type      string `xml:"type"`
+	User      string `xml:"user"`
+	Address   string `xml:"address"`
+	Interface string `xml:"interface"`
+	AliasName string `xml:"alias-name"`
 }
 
 // Name returns the alias name, preferring the attribute form over the element form.
@@ -221,6 +234,33 @@ func (a Alias) MarshalJSON() ([]byte, error) {
 		Members []string `json:"members"`
 	}
 	return json.Marshal(plain{Name: a.Name(), Members: a.Members})
+}
+
+// resolveAliasMembers populates the Members field from raw parsed data.
+func resolveAliasMembers(a *Alias) {
+	if len(a.LegacyMembers) > 0 {
+		a.Members = a.LegacyMembers
+		return
+	}
+	for _, m := range a.RawMembers {
+		switch m.Type {
+		case "2": // alias reference
+			if m.AliasName != "" {
+				a.Members = append(a.Members, m.AliasName)
+			}
+		case "1": // user/address/interface
+			if m.User != "" && m.User != "Any" {
+				a.Members = append(a.Members, m.User)
+			}
+			if m.Address != "" && m.Address != "Any" {
+				a.Members = append(a.Members, m.Address)
+			}
+		default:
+			if m.AliasName != "" {
+				a.Members = append(a.Members, m.AliasName)
+			}
+		}
+	}
 }
 
 type PolicyList struct {

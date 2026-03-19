@@ -62,13 +62,19 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		}
 	}
 
+	// Merge alias sources and resolve members
+	allAliases := append(cfg.PolicyObjects.Aliases, cfg.AliasList...)
+	for i := range allAliases {
+		resolveAliasMembers(&allAliases[i])
+	}
+
 	score := calculateScore(results)
 	return AuditReport{
 		DeviceInfo: ExtractDeviceInfo(cfg),
 		Score:      score,
 		Results:    results,
 		Policies:   cfg.PolicyList.Policies,
-		Aliases:    cfg.PolicyObjects.Aliases,
+		Aliases:    allAliases,
 	}
 }
 
