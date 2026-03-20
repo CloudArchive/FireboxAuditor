@@ -14,10 +14,11 @@ const (
 )
 
 type AuditResult struct {
-	RuleID   string   `json:"rule_id"`
-	Severity Severity `json:"severity"`
-	Passed   bool     `json:"passed"`
-	Details  []string `json:"details,omitempty"`
+	RuleID         string   `json:"rule_id"`
+	Severity       Severity `json:"severity"`
+	Passed         bool     `json:"passed"`
+	Details        []string `json:"details,omitempty"`
+	PointsDeducted int      `json:"points_deducted"`
 }
 
 type AuditReport struct {
@@ -446,7 +447,8 @@ func checkLogging(cfg *WatchGuardConfig) AuditResult {
 
 func calculateScore(results []AuditResult) int {
 	score := 100
-	for _, r := range results {
+	for i := range results {
+		r := &results[i]
 		if r.Passed {
 			continue
 		}
@@ -454,14 +456,19 @@ func calculateScore(results []AuditResult) int {
 		if findings == 0 {
 			findings = 1 // At least 1 finding if rule failed
 		}
+
+		penalty := 0
 		switch r.Severity {
 		case Critical:
-			score -= min(findings*10, 30) // 10 per finding, max 30
+			penalty = min(20+(5*findings), 30) // Base penalty 20 + (5 * findings). Max penalty: 30
 		case High:
-			score -= min(findings*3, 20) // 3 per finding, max 20
+			penalty = min(10+(2*findings), 20) // Base penalty 10 + (2 * findings). Max penalty: 20
 		case Medium:
-			score -= min(findings*2, 10) // 2 per finding, max 10
+			penalty = min(5+(1*findings), 10) // Base penalty 5 + (1 * findings). Max penalty: 10
 		}
+
+		r.PointsDeducted = penalty
+		score -= penalty
 	}
 	if score < 0 {
 		score = 0

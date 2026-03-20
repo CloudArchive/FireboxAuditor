@@ -108,7 +108,8 @@
   },
   "status": {
     "passed": "Passed",
-    "failed": "Failed"
+    "failed": "Failed",
+    "ptsDeducted": "-{{points}} pts"
   },
   "card": {
     "howToFix": "How to Fix?"

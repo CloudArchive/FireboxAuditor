@@ -103,7 +103,8 @@
   },
   "status": {
     "passed": "Geçti",
-    "failed": "Başarısız"
+    "failed": "Başarısız",
+    "ptsDeducted": "-{{points}} puan"
   },
   "card": {
     "howToFix": "Nasıl Düzeltilir?"

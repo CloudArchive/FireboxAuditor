@@ -23,7 +23,7 @@ const severityStyles = {
 
 export default function AuditCard({ result }) {
   const { t } = useI18n()
-  const { passed, severity, rule_id, details } = result
+  const { passed, severity, rule_id, details, points_deducted } = result
   const sev = severityStyles[severity] || severityStyles.medium
 
   const ruleName = t(`rules.${rule_id}.name`)
@@ -58,6 +58,11 @@ export default function AuditCard({ result }) {
             <span className="font-medium text-wg-headline dark:text-white">{ruleName}</span>
             <span className={`text-xs px-2 py-0.5 rounded ${sev.badge}`}>{t(`severity.${severity}`)}</span>
             <span className="text-xs px-2 py-0.5 rounded bg-wg-red/10 text-wg-red dark:bg-wg-red/20 dark:text-red-300">{t('status.failed')}</span>
+            {points_deducted > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-bold border border-red-200 dark:border-red-800">
+                {t('status.ptsDeducted', { points: points_deducted })}
+              </span>
+            )}
             <span className="wg-accent text-sm">|</span>
             <span className="text-xs text-wg-body dark:text-wg-gray-light/50 font-mono">{rule_id}</span>
           </div>
