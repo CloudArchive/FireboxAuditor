@@ -48,6 +48,10 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		checkOutgoingPolicy(cfg),
 		checkSecurityServices(cfg),
 		checkLogging(cfg),
+		checkOrphanObjects(cfg),
+		checkAccountLockout(cfg),
+		checkVPNWeakCrypto(cfg),
+		checkDefaultCertificates(cfg),
 	}
 
 	// Map proxy actions for enrichment
@@ -463,4 +467,299 @@ func calculateScore(results []AuditResult) int {
 		score = 0
 	}
 	return score
+}
+
+// ── Rule 6 (Medium): Orphan Objects ─────────────────────────────────────────
+
+// isSystemDefaultAlias returns true for WatchGuard built-in aliases that cannot
+// be deleted and should not be flagged as orphans.
+func isSystemDefaultAlias(name string) bool {
+	defaults := map[string]bool{
+		"Any":            true,
+		"Any-Trusted":    true,
+		"Any-External":   true,
+		"Any-Optional":   true,
+		"Any-BOVPN":      true,
+		"Any-MUVPN":      true,
+		"Firebox":        true,
+	}
+	return defaults[name]
+}
+
+func checkOrphanObjects(cfg *WatchGuardConfig) AuditResult {
+	r := AuditResult{
+		RuleID:   "RULE-006",
+		Severity: Medium,
+		Passed:   true,
+	}
+
+	// Collect all known object names
+	allAliases := append(cfg.PolicyObjects.Aliases, cfg.AliasList...)
+	objectNames := make(map[string]bool)
+	for _, a := range allAliases {
+		objectNames[a.Name()] = true
+	}
+	for _, ag := range cfg.AddressGroupList {
+		objectNames[ag.Name] = true
+	}
+
+	// Build "used" set from policy From/To aliases
+	usedSet := make(map[string]bool)
+	for _, policy := range cfg.PolicyList.Policies {
+		for _, alias := range policy.From.Aliases {
+			usedSet[alias] = true
+		}
+		for _, alias := range policy.To.Aliases {
+			usedSet[alias] = true
+		}
+	}
+
+	// Also mark objects referenced inside other aliases (inter-alias references)
+	for _, a := range allAliases {
+		for _, m := range a.RawMembers {
+			if m.AliasName != "" {
+				usedSet[m.AliasName] = true
+			}
+			if m.Address != "" {
+				usedSet[m.Address] = true
+			}
+		}
+	}
+
+	// Check which objects are never referenced
+	for name := range objectNames {
+		if isSystemDefaultAlias(name) {
+			continue
+		}
+		if !usedSet[name] {
+			r.Details = append(r.Details, name)
+		}
+	}
+
+	if len(r.Details) > 0 {
+		r.Passed = false
+	}
+	return r
+}
+
+// ── Rule 7 (High): Account Lockout Settings ─────────────────────────────────
+
+func checkAccountLockout(cfg *WatchGuardConfig) AuditResult {
+	r := AuditResult{
+		RuleID:   "RULE-007",
+		Severity: High,
+		Passed:   true,
+	}
+
+	if cfg.SystemParameters.AuthGlobal == nil ||
+		cfg.SystemParameters.AuthGlobal.MgmtAcctLockout == nil {
+		r.Passed = false
+		r.Details = append(r.Details, "Account lockout is not configured")
+		return r
+	}
+
+	lock := cfg.SystemParameters.AuthGlobal.MgmtAcctLockout
+	if lock.Enabled != "1" && lock.Enabled != "true" {
+		r.Passed = false
+		r.Details = append(r.Details, "Account lockout is disabled")
+	}
+	return r
+}
+
+// ── Rule 8 (Critical): VPN Weak Cryptography ────────────────────────────────
+
+// ikeEncryptionName maps WatchGuard encryp-algm IDs to human-readable names.
+func ikeEncryptionName(algm int) string {
+	switch algm {
+	case 1:
+		return "DES-CBC"
+	case 2:
+		return "DES"
+	case 3:
+		return "3DES"
+	case 7:
+		return "AES-CBC"
+	case 12:
+		return "AES"
+	case 20:
+		return "AES-GCM"
+	default:
+		return fmt.Sprintf("Alg-%d", algm)
+	}
+}
+
+// ikeAuthName maps WatchGuard auth-algm IDs to human-readable names.
+func ikeAuthName(algm int) string {
+	switch algm {
+	case 0:
+		return "None"
+	case 1:
+		return "MD5"
+	case 2:
+		return "SHA1"
+	case 4:
+		return "SHA256"
+	case 5:
+		return "SHA256"
+	case 6:
+		return "SHA384"
+	case 7:
+		return "SHA512"
+	default:
+		return fmt.Sprintf("Auth-%d", algm)
+	}
+}
+
+// dhGroupName maps DH group numbers to human-readable names.
+func dhGroupName(group int) string {
+	switch group {
+	case 1:
+		return "DH Group 1 (768-bit)"
+	case 2:
+		return "DH Group 2 (1024-bit)"
+	case 5:
+		return "DH Group 5 (1536-bit)"
+	case 14:
+		return "DH Group 14"
+	case 19:
+		return "DH Group 19 (ECP-256)"
+	case 20:
+		return "DH Group 20 (ECP-384)"
+	default:
+		return fmt.Sprintf("DH Group %d", group)
+	}
+}
+
+// isWeakEncryption returns true for legacy encryption algorithms.
+func isWeakEncryption(algm int) bool {
+	return algm == 1 || algm == 2 || algm == 3 // DES-CBC, DES, 3DES
+}
+
+// isWeakAuth returns true for legacy authentication algorithms.
+func isWeakAuth(algm int) bool {
+	return algm == 1 // MD5
+}
+
+// isWeakDHGroup returns true for deprecated DH groups.
+func isWeakDHGroup(group int) bool {
+	return group == 1 || group == 2
+}
+
+func checkVPNWeakCrypto(cfg *WatchGuardConfig) AuditResult {
+	r := AuditResult{
+		RuleID:   "RULE-008",
+		Severity: Critical,
+		Passed:   true,
+	}
+
+	// Check Phase 1 (IKE Action) transforms
+	for _, action := range cfg.IKEActionList {
+		for _, m := range action.Transform.Members {
+			var weakItems []string
+			if isWeakEncryption(m.EncrypAlgm) {
+				weakItems = append(weakItems, ikeEncryptionName(m.EncrypAlgm))
+			}
+			if isWeakAuth(m.AuthAlgm) {
+				weakItems = append(weakItems, ikeAuthName(m.AuthAlgm))
+			}
+			if isWeakDHGroup(m.DHGroup) {
+				weakItems = append(weakItems, dhGroupName(m.DHGroup))
+			}
+			if len(weakItems) > 0 {
+				msg := fmt.Sprintf("Phase1 '%s' → %s", action.Name, strings.Join(weakItems, ", "))
+				r.Details = append(r.Details, msg)
+			}
+		}
+	}
+
+	// Check Phase 2 (IPsec Proposal) transforms
+	for _, prop := range cfg.IPsecProposalList {
+		for _, m := range prop.ESPTransform.Members {
+			var weakItems []string
+			if isWeakEncryption(m.EncrypAlgm) {
+				weakItems = append(weakItems, ikeEncryptionName(m.EncrypAlgm))
+			}
+			if isWeakAuth(m.AuthAlgm) {
+				weakItems = append(weakItems, ikeAuthName(m.AuthAlgm))
+			}
+			if len(weakItems) > 0 {
+				msg := fmt.Sprintf("Phase2 '%s' → %s", prop.Name, strings.Join(weakItems, ", "))
+				r.Details = append(r.Details, msg)
+			}
+		}
+	}
+
+	if len(r.Details) > 0 {
+		r.Passed = false
+	}
+	return r
+}
+
+// ── Rule 9 (Medium): Default Certificates in Use ────────────────────────────
+
+func checkDefaultCertificates(cfg *WatchGuardConfig) AuditResult {
+	r := AuditResult{
+		RuleID:   "RULE-009",
+		Severity: Medium,
+		Passed:   true,
+	}
+
+	// Extract serial number for comparison
+	serialNumber := ""
+	for _, cert := range cfg.SystemParameters.IKECerts {
+		if m := snRe.FindStringSubmatch(cert.Issuer); len(m) > 1 {
+			serialNumber = m[1]
+			break
+		}
+	}
+
+	// Merge all certificate sources
+	allCerts := append(cfg.SystemParameters.IKECerts, cfg.CertList...)
+
+	for _, cert := range allCerts {
+		issuerLower := strings.ToLower(cert.Issuer)
+		subjectLower := strings.ToLower(cert.Subject)
+
+		isDefault := false
+		var reason string
+
+		// Check for WatchGuard default certificate patterns
+		if strings.Contains(issuerLower, "o=watchguard") ||
+			strings.Contains(subjectLower, "o=watchguard") {
+			isDefault = true
+			reason = "WatchGuard default issuer"
+		}
+
+		if strings.Contains(issuerLower, "watchguard default") ||
+			strings.Contains(subjectLower, "watchguard default") {
+			isDefault = true
+			reason = "WatchGuard Default certificate"
+		}
+
+		// Check if certificate contains the device serial number
+		if serialNumber != "" {
+			if strings.Contains(cert.Issuer, serialNumber) ||
+				strings.Contains(cert.Subject, serialNumber) {
+				isDefault = true
+				reason = "Contains device serial number"
+			}
+		}
+
+		if isDefault {
+			// Truncate long subject/issuer for readability
+			label := cert.Subject
+			if label == "" {
+				label = cert.Issuer
+			}
+			if len(label) > 80 {
+				label = label[:80] + "..."
+			}
+			r.Details = append(r.Details, fmt.Sprintf("%s (%s)", label, reason))
+		}
+	}
+
+	if len(r.Details) > 0 {
+		r.Passed = false
+	}
+	return r
 }

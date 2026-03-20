@@ -175,6 +175,30 @@
       "descPass": "Tüm politikalarda loglama aktif.",
       "descFail": "Loglama kapalı olan politikalar: {{details}}. Loglar olmadan güvenlik olaylarını tespit etmek ve adli analiz yapmak imkansız hale gelir.",
       "remediation": "Policy Manager'da her bir politikayı düzenleyip 'Properties' > 'Logging' sekmesinden 'Send a log message' ve 'Send a log message for reports' seçeneklerini işaretleyin."
+    },
+    "RULE-006": {
+      "name": "Kullanılmayan (Orphan) Objeler",
+      "descPass": "Tüm alias ve adres grupları politikalarda aktif olarak kullanılıyor veya diğer objeler tarafından referans ediliyor.",
+      "descFail": "Kullanılmayan güvenlik duvarı objeleri tespit edildi: {{details}}. Orphan objeler karmaşıklık yaratır, saldırı yüzeyini artırır ve konfigürasyon denetimlerini zorlaştırır.",
+      "remediation": "Policy Manager > Setup > Aliases bölümünden kullanılmayan alias ve adres gruplarını gözden geçirip silin. Hiçbir objenin en az bir aktif politikada referans edilmeden var olmadığından emin olun."
+    },
+    "RULE-007": {
+      "name": "Hesap Kilitleme Ayarları",
+      "descPass": "Yönetim hesabı kilitleme özelliği etkin ve düzgün yapılandırılmış.",
+      "descFail": "{{details}}. Hesap kilitleme olmadan yönetim arayüzüne yönelik kaba kuvvet saldırıları süresiz olarak devam edebilir.",
+      "remediation": "Setup > Authentication > Authentication Settings > Management Account Lockout bölümünden hesap kilitlemeyi etkinleştirin. Maksimum 3–5 başarısız deneme ve en az 5 dakikalık kilitleme süresi ayarlayın."
+    },
+    "RULE-008": {
+      "name": "VPN Zayıf Kriptografi",
+      "descPass": "Tüm VPN Phase 1 ve Phase 2 teklifleri güçlü, modern kriptografik algoritmalar kullanıyor.",
+      "descFail": "Zayıf VPN kriptografisi tespit edildi: {{details}}. Eski algoritmalar (DES, 3DES, MD5, DH Group 1/2) kaba kuvvet ve çarpışma saldırılarına karşı savunmasızdır.",
+      "remediation": "VPN gateway ve tünel ayarlarını AES-256 veya AES-GCM şifreleme, SHA-256 veya SHA-384 doğrulama ve DH Group 14 veya üzeri kullanacak şekilde güncelleyin. Tüm eski transform tekliflerini kaldırın."
+    },
+    "RULE-009": {
+      "name": "Varsayılan Sertifika Kullanımı",
+      "descPass": "Tüm sertifikalar güvenilir CA veya dahili PKI sertifikalarıyla değiştirilmiş.",
+      "descFail": "Varsayılan veya kendinden imzalı WatchGuard sertifikaları tespit edildi: {{details}}. Varsayılan sertifikalar kamuya açıktır ve kimlik güvencesi sağlamaz.",
+      "remediation": "Varsayılan sertifikaları güvenilir bir CA veya dahili PKI'ınızdan alınan sertifikalarla değiştirin. Firebox System Manager > System > Certificates bölümünden Web UI, VPN ve içerik denetimi için yeni sertifikalar içe aktarıp atayın."
     }
   }
 }

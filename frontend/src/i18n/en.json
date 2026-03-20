@@ -180,6 +180,30 @@
       "descPass": "Logging is enabled on all policies.",
       "descFail": "Policies with logging disabled: {{details}}. Without logs, detecting security events and performing forensic analysis becomes impossible.",
       "remediation": "Edit each policy in Policy Manager and enable 'Send a log message' and 'Send a log message for reports' under Properties > Logging."
+    },
+    "RULE-006": {
+      "name": "Orphan Objects",
+      "descPass": "All aliases and address groups are actively used in policies or referenced by other objects.",
+      "descFail": "Unused firewall objects detected: {{details}}. Orphan objects create clutter, increase attack surface, and make configuration audits harder.",
+      "remediation": "Review and delete unused aliases and address groups via Policy Manager > Setup > Aliases. Ensure no object exists without being referenced in at least one active policy."
+    },
+    "RULE-007": {
+      "name": "Account Lockout Settings",
+      "descPass": "Management account lockout is enabled and properly configured.",
+      "descFail": "{{details}}. Without account lockout, brute-force attacks against the management interface can proceed indefinitely.",
+      "remediation": "Enable account lockout under Setup > Authentication > Authentication Settings > Management Account Lockout. Set a maximum of 3–5 failed attempts with a lockout duration of at least 5 minutes."
+    },
+    "RULE-008": {
+      "name": "VPN Weak Cryptography",
+      "descPass": "All VPN Phase 1 and Phase 2 proposals use strong, modern cryptographic algorithms.",
+      "descFail": "Weak VPN cryptography detected: {{details}}. Legacy algorithms (DES, 3DES, MD5, DH Group 1/2) are vulnerable to brute-force and collision attacks.",
+      "remediation": "Update VPN gateway and tunnel settings to use AES-256 or AES-GCM encryption, SHA-256 or SHA-384 authentication, and DH Group 14 or higher. Remove all legacy transform proposals."
+    },
+    "RULE-009": {
+      "name": "Default Certificates in Use",
+      "descPass": "All certificates have been replaced with trusted CA or internal PKI certificates.",
+      "descFail": "Default or self-signed WatchGuard certificates detected: {{details}}. Default certificates are publicly known and do not provide identity assurance.",
+      "remediation": "Replace default certificates with certificates from a trusted CA or your internal PKI. Go to System > Certificates in Firebox System Manager to import and assign new certificates for Web UI, VPN, and content inspection."
     }
   }
 }

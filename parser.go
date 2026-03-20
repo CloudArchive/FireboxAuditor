@@ -112,32 +112,39 @@ func wgTimeZone(idx int) string {
 
 // Top-level WatchGuard configuration
 type WatchGuardConfig struct {
-	XMLName           xml.Name          `xml:"profile" json:"-"`
-	ForVersion        string            `xml:"for-version" json:"for_version"`
-	SystemParameters  SystemParameters  `xml:"system-parameters" json:"system_parameters"`
-	PolicyObjects     PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
-	AliasList         []Alias           `xml:"alias-list>alias" json:"-"`
-	AddressGroupList  []AddressGroup    `xml:"address-group-list>address-group" json:"-"`
-	PolicyList        PolicyList        `xml:"policy-list" json:"policy_list"`
-	ServiceList       []ServiceDef      `xml:"service-list>service" json:"-"`
-	NATList           []NATRule         `xml:"nat-list>nat" json:"-"`
-	SecurityServices  SecurityServices  `xml:"security-services" json:"security_services"`
-	ProxyActionList   ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
+	XMLName            xml.Name          `xml:"profile" json:"-"`
+	ForVersion         string            `xml:"for-version" json:"for_version"`
+	SystemParameters   SystemParameters  `xml:"system-parameters" json:"system_parameters"`
+	PolicyObjects      PolicyObjects     `xml:"policy-objects" json:"policy_objects"`
+	AliasList          []Alias           `xml:"alias-list>alias" json:"-"`
+	AddressGroupList   []AddressGroup    `xml:"address-group-list>address-group" json:"-"`
+	PolicyList         PolicyList        `xml:"policy-list" json:"policy_list"`
+	ServiceList        []ServiceDef      `xml:"service-list>service" json:"-"`
+	NATList            []NATRule         `xml:"nat-list>nat" json:"-"`
+	SecurityServices   SecurityServices  `xml:"security-services" json:"security_services"`
+	ProxyActionList    ProxyActionList   `xml:"proxy-action-list" json:"proxy_action_list"`
+	// VPN structures for Rule 8
+	IKEActionList      []IKEAction       `xml:"ike-action-list>ike-action" json:"-"`
+	IPsecProposalList  []IPsecProposal   `xml:"ipsec-proposal-list>ipsec-proposal" json:"-"`
+	// Certificate list (alternative path) for Rule 9
+	CertList           []IKECert         `xml:"cert-list>cert" json:"-"`
 }
 
 type SystemParameters struct {
-	AdminUsers      []AdminUser      `xml:"admin-users>user"`
-	DeviceConf      DeviceConf       `xml:"device-conf"`
-	Interfaces      []Interface      `xml:"interface-list>interface"`
-	IKECerts        []IKECert        `xml:"ike>ike-cert-list>cert"`
-	DNSServers      []string         `xml:"dns-server-list>dns-entry"`
-	LogConf         *LogConf         `xml:"log-conf"`
-	CommonLogging   *CommonLogging   `xml:"common-logging"`
-	DNSWatch        *DNSWatchConf    `xml:"dnswatch"`
-	IPS             *GlobalIPS       `xml:"ips"`
-	APT             *GlobalAPT       `xml:"apt"`
-	BotnetDetection *GlobalBotnet    `xml:"botnet-detection"`
-	DoSPrevention   []DoSItem        `xml:"dos-prevention>dos-item"`
+	AdminUsers      []AdminUser        `xml:"admin-users>user"`
+	DeviceConf      DeviceConf         `xml:"device-conf"`
+	Interfaces      []Interface        `xml:"interface-list>interface"`
+	IKECerts        []IKECert          `xml:"ike>ike-cert-list>cert"`
+	DNSServers      []string           `xml:"dns-server-list>dns-entry"`
+	LogConf         *LogConf           `xml:"log-conf"`
+	CommonLogging   *CommonLogging     `xml:"common-logging"`
+	DNSWatch        *DNSWatchConf      `xml:"dnswatch"`
+	IPS             *GlobalIPS         `xml:"ips"`
+	APT             *GlobalAPT         `xml:"apt"`
+	BotnetDetection *GlobalBotnet      `xml:"botnet-detection"`
+	DoSPrevention   []DoSItem          `xml:"dos-prevention>dos-item"`
+	// Account lockout settings for Rule 7
+	AuthGlobal      *AuthGlobalSetting `xml:"auth-global-setting"`
 }
 
 type LogConf struct {
@@ -218,7 +225,58 @@ type VlanIf struct {
 }
 
 type IKECert struct {
-	Issuer string `xml:"issuer"`
+	Issuer  string `xml:"issuer"`
+	Subject string `xml:"subject"`
+}
+
+// ── Account lockout settings ────────────────────────────────────────────────
+
+type AuthGlobalSetting struct {
+	MgmtAcctLockout *MgmtAcctLockout `xml:"mgmt-acct-lockout"`
+}
+
+type MgmtAcctLockout struct {
+	Enabled  string `xml:"enabled"`
+	Failures string `xml:"failures"`
+	Lockouts string `xml:"lockouts"`
+	Duration string `xml:"duration"`
+}
+
+// ── VPN IKE / IPsec structures ──────────────────────────────────────────────
+
+// IKEAction represents a Phase 1 IKE action with transform proposals.
+type IKEAction struct {
+	Name      string       `xml:"name"`
+	Transform IKETransform `xml:"ike-transform"`
+}
+
+// IKETransform holds the transform set members for Phase 1.
+type IKETransform struct {
+	Members []IKETransformMember `xml:"member"`
+}
+
+// IKETransformMember holds the cryptographic parameters for a single Phase 1 proposal.
+type IKETransformMember struct {
+	DHGroup    int `xml:"dh-group"`
+	EncrypAlgm int `xml:"encryp-algm"`
+	AuthAlgm   int `xml:"auth-algm"`
+}
+
+// IPsecProposal represents a Phase 2 IPsec transform set.
+type IPsecProposal struct {
+	Name         string       `xml:"name"`
+	ESPTransform ESPTransform `xml:"esp-transform"`
+}
+
+// ESPTransform holds the ESP transform set members for Phase 2.
+type ESPTransform struct {
+	Members []ESPTransformMember `xml:"member"`
+}
+
+// ESPTransformMember holds the cryptographic parameters for a single Phase 2 proposal.
+type ESPTransformMember struct {
+	EncrypAlgm int `xml:"encryp-algm"`
+	AuthAlgm   int `xml:"auth-algm"`
 }
 
 // DeviceInfo is the extracted device summary for the frontend
