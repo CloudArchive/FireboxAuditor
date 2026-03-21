@@ -810,18 +810,45 @@ func checkDefaultCertificates(cfg *WatchGuardConfig) AuditResult {
 
 // isSystemPolicy helps determine if a given policy is a WatchGuard built-in system policy
 func isSystemPolicy(name string) bool {
-	systemNames := []string{
+	lower := strings.ToLower(strings.TrimSpace(name))
+
+	// Exact matches
+	exactMatches := []string{
 		"watchguard", "watchguard web ui", "pingtofirebox", "ping", "ntp", "dns",
 		"wg-tdr-host-sensor", "watchguard authentication", "watchguard certificate portal",
 		"watchguard sslvpn", "wg-auth", "wg-cert-portal", "wg-firebox-mgmt",
 		"allow sslvpn-users", "allow ikev2-users", "watchguard ipsec", "dhcp-client",
-		"watchguard cloud", "mpls- dimension", "watchguard report server", "watchguard log server",
+		"watchguard cloud", "watchguard report server", "watchguard log server",
+		"allow-ike-to-firebox",
 	}
-	lower := strings.ToLower(name)
-	for _, sn := range systemNames {
-		if lower == sn {
+	for _, sn := range exactMatches {
+		if lower == sn || lower == sn+"-00" {
 			return true
 		}
 	}
+
+	// Dynamic/prefix matches for auto-generated VPN and system rules
+	prefixes := []string{
+		"unhandled muvpn packet",
+		"ipsec-vpn",
+		"bovpn-allow",
+		"wg-",
+		"watchguard ",
+	}
+	for _, pfx := range prefixes {
+		if strings.HasPrefix(lower, pfx) {
+			return true
+		}
+	}
+
+	// Auto-generated IPSec/BOVPN interface policies often end with .in, .out, .in-00, .out-00
+	if strings.HasSuffix(lower, ".in") || strings.HasSuffix(lower, ".out") ||
+		strings.HasSuffix(lower, ".in-00") || strings.HasSuffix(lower, ".out-00") {
+		// Just to be safe, only hide them if they look like VPN policies
+		if strings.Contains(lower, "ipsec") || strings.Contains(lower, "bovpn") || strings.Contains(lower, "vpn") {
+			return true
+		}
+	}
+
 	return false
 }
