@@ -21,7 +21,7 @@ export default function SshLogsModal({ logs, host, onClose }) {
         {/* Log output */}
         <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[11px] text-emerald-400 space-y-0.5">
           {logs.length === 0 ? (
-            <p className="text-white/30 italic">Log bulunamadı.</p>
+            <p className="text-white/40 italic mt-2 text-center">Bellek yenilendiği için geçmiş loglar silindi.<br/>Canlı akışı görmek için <b>Yeniden Bağlan</b> butonunu kullanabilirsiniz.</p>
           ) : (
             logs.map((line, i) => (
               <div key={i} className={

@@ -138,7 +138,7 @@ export default function AuditPage({ auditRecord, onBack, onRecordUpdate }) {
               onEnrichRequest={() => setShowEnrich(true)}
               onReconnect={() => setShowEnrich(true)}
               onDisconnect={handleDisconnect}
-              onShowLogs={sshLogs.length > 0 ? () => setShowLogs(true) : undefined}
+              onShowLogs={() => setShowLogs(true)}
             />
           </div>
           <div className="flex flex-col gap-6">
