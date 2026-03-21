@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
 
 export default function PolicyTable({ policies, aliases = [], highlightedIndices = [], onSelectPolicy }) {
   const { t } = useI18n()
+  const [showSystemPolicies, setShowSystemPolicies] = useState(false)
 
   const resolveAlias = (name) => {
     const alias = aliases.find(a => a.name === name)
@@ -23,10 +25,25 @@ export default function PolicyTable({ policies, aliases = [], highlightedIndices
 
   return (
     <div className="mt-12 animate-fade-in" id="policy-visualization">
-      <h2 className="text-xl font-semibold text-wg-headline dark:text-white mb-6 flex items-center gap-3">
-        <span className="bg-wg-red w-1.5 h-6 rounded-full"></span>
-        {t('policyTable.title') || 'Firewall Policy Visualization'}
-      </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <h2 className="text-xl font-semibold text-wg-headline dark:text-white flex items-center gap-3 m-0">
+          <span className="bg-wg-red w-1.5 h-6 rounded-full"></span>
+          {t('policyTable.title') || 'Firewall Policy Visualization'}
+        </h2>
+        
+        <div className="flex items-center gap-3 bg-white/50 dark:bg-wg-headline/20 px-4 py-2 rounded-full border border-wg-gray-light dark:border-wg-headline/30 backdrop-blur-sm self-start sm:self-auto">
+          <label className="text-xs font-semibold text-wg-body dark:text-wg-gray-light cursor-pointer select-none" onClick={() => setShowSystemPolicies(!showSystemPolicies)}>
+            {t('policyTable.showSystem') || 'Show System Policies'}
+          </label>
+          <button 
+            type="button" 
+            onClick={() => setShowSystemPolicies(!showSystemPolicies)}
+            className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${showSystemPolicies ? 'bg-wg-red' : 'bg-wg-gray dark:bg-wg-headline/50'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${showSystemPolicies ? 'translate-x-4' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </div>
 
       <div className="wg-card overflow-hidden border border-wg-gray-light dark:border-wg-headline/30 bg-white/80 dark:bg-wg-headline/10 backdrop-blur-md rounded-2xl shadow-xl shadow-wg-black/5">
         <div className="overflow-x-auto">
@@ -43,7 +60,7 @@ export default function PolicyTable({ policies, aliases = [], highlightedIndices
               </tr>
             </thead>
             <tbody className="divide-y divide-wg-gray-light/10 dark:divide-wg-headline/20">
-              {policies.map((policy) => {
+              {policies.filter(p => showSystemPolicies || !p.is_system).map((policy) => {
                 const isHighlighted = highlightedIndices.includes(policy.order)
                 return (
                   <tr

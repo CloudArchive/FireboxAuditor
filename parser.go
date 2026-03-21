@@ -726,10 +726,10 @@ type Policy struct {
 	IPSMonitor    string               `xml:"ips-monitor-enabled" json:"ips_monitor_enabled"`
 	AppAction     string               `xml:"app-action" json:"app_action"`
 	NATRef        string               `xml:"nat" json:"nat_ref,omitempty"`
-	// Enriched fields populated after parsing
 	ServicePorts  string               `xml:"-" json:"service_ports,omitempty"`
 	ResolvedNAT   *ResolvedNAT         `xml:"-" json:"resolved_nat,omitempty"`
 	ProxyServices *PolicyProxyServices `xml:"-" json:"proxy_services,omitempty"`
+	IsSystem      bool                 `xml:"-" json:"is_system"`
 }
 
 type PolicyFrom struct {

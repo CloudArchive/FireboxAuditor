@@ -116,6 +116,7 @@
   },
   "policyTable": {
     "title": "Security Policy Visualization",
+    "showSystem": "Show System Policies",
     "order": "Order",
     "action": "Action",
     "name": "Policy Name",

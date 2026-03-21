@@ -111,6 +111,7 @@
   },
   "policyTable": {
     "title": "Güvenlik Politikası Görselleştirme",
+    "showSystem": "Sistem Politikalarını Göster",
     "order": "Sıra",
     "action": "Aksiyon",
     "name": "Politika Adı",

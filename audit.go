@@ -84,6 +84,7 @@ func RunAudit(cfg *WatchGuardConfig) AuditReport {
 		cfg.PolicyList.Policies[i].Order = i + 1
 
 		p := &cfg.PolicyList.Policies[i]
+		p.IsSystem = isSystemPolicy(p.Name)
 
 		// Populate LogSettings from raw sibling XML fields
 		p.Logging = LogSettings{
@@ -803,4 +804,24 @@ func checkDefaultCertificates(cfg *WatchGuardConfig) AuditResult {
 		r.Passed = false
 	}
 	return r
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+// isSystemPolicy helps determine if a given policy is a WatchGuard built-in system policy
+func isSystemPolicy(name string) bool {
+	systemNames := []string{
+		"watchguard", "watchguard web ui", "pingtofirebox", "ping", "ntp", "dns",
+		"wg-tdr-host-sensor", "watchguard authentication", "watchguard certificate portal",
+		"watchguard sslvpn", "wg-auth", "wg-cert-portal", "wg-firebox-mgmt",
+		"allow sslvpn-users", "allow ikev2-users", "watchguard ipsec", "dhcp-client",
+		"watchguard cloud", "mpls- dimension", "watchguard report server", "watchguard log server",
+	}
+	lower := strings.ToLower(name)
+	for _, sn := range systemNames {
+		if lower == sn {
+			return true
+		}
+	}
+	return false
 }
