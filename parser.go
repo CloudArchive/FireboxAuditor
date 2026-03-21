@@ -716,6 +716,7 @@ type Policy struct {
 	From          PolicyFrom           `xml:"from-alias-list" json:"from"`
 	To            PolicyTo             `xml:"to-alias-list" json:"to"`
 	Service       string               `xml:"service" json:"service"`
+	Action        string               `xml:"firewall-action" json:"action"`
 	// Raw log fields parsed from XML sibling elements
 	LogRaw        string               `xml:"log" json:"-"`
 	LogForReport  string               `xml:"log-for-report" json:"-"`
@@ -751,10 +752,11 @@ type ProxyActionList struct {
 }
 
 type ProxyAction struct {
-	Name        string `xml:"proxy-name"`
-	Description string `xml:"proxy-description"`
-	Type        string `xml:"proxy-type-attr"`
-	HTTP        *HTTPProxyAction  `xml:"http"`
+	Name         string `xml:"proxy-name"`
+	Description  string `xml:"proxy-description"`
+	Type         string `xml:"proxy-type-attr"`
+	LogForReport string `xml:"log-for-report"`
+	HTTP         *HTTPProxyAction  `xml:"http"`
 	HTTPS       *HTTPSProxyAction `xml:"https"`
 	TCP         *TCPProxyAction   `xml:"outgoing"`
 }

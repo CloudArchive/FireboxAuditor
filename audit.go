@@ -426,6 +426,12 @@ func checkLogging(cfg *WatchGuardConfig) AuditResult {
 		Passed:   true,
 	}
 
+	// Map proxy actions for lookup
+	proxyMap := make(map[string]ProxyAction)
+	for _, pa := range cfg.ProxyActionList.ProxyActions {
+		proxyMap[pa.Name] = pa
+	}
+
 	for _, policy := range cfg.PolicyList.Policies {
 		if policy.Enabled == "false" || policy.Enabled == "0" {
 			continue
@@ -433,9 +439,37 @@ func checkLogging(cfg *WatchGuardConfig) AuditResult {
 		if strings.TrimSpace(policy.Name) == "" {
 			continue
 		}
-		if policy.Logging.Enabled != "true" && policy.Logging.Enabled != "1" &&
-			policy.Logging.ForReport != "true" && policy.Logging.ForReport != "1" {
-			r.Details = append(r.Details, policy.Name)
+
+		logRawEnabled := policy.Logging.Enabled == "true" || policy.Logging.Enabled == "1"
+		logReportEnabled := policy.Logging.ForReport == "true" || policy.Logging.ForReport == "1"
+
+		if policy.Proxy != "" {
+			// Scenario C - Proxy Policies
+			if pa, ok := proxyMap[policy.Proxy]; ok {
+				proxyReportEnabled := pa.LogForReport == "true" || pa.LogForReport == "1"
+				if !proxyReportEnabled {
+					r.Details = append(r.Details, fmt.Sprintf("%s (Missing Report Logging in ProxyAction)", policy.Name))
+				}
+			}
+		} else {
+			// Scenario A and B - Packet Filter
+			actionLower := strings.ToLower(policy.Action)
+			isDeny := actionLower == "deny" || actionLower == "drop" || actionLower == "reject" || actionLower == "0"
+
+			if isDeny {
+				// Scenario B - Packet Filter (Action = Deny)
+				if !logRawEnabled {
+					r.Details = append(r.Details, fmt.Sprintf("%s (Deny policy is not logging blocked traffic)", policy.Name))
+				}
+			} else {
+				// Scenario A - Packet Filter (Action = Allow)
+				if logRawEnabled {
+					r.Details = append(r.Details, fmt.Sprintf("%s (Performance Risk: Send Log Message enabled on an Allow policy)", policy.Name))
+				}
+				if !logReportEnabled {
+					r.Details = append(r.Details, fmt.Sprintf("%s (Missing Report Logging)", policy.Name))
+				}
+			}
 		}
 	}
 
