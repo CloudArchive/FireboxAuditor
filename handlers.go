@@ -207,11 +207,8 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 	if err != nil {
 		return nil, logs, fmt.Errorf("sysinfo komutu başarısız: %w", err)
 	}
-	// Log raw output for debugging (truncated to 1000 chars)
+	// Log raw output for debugging
 	rawSys := stripANSI(sysOutput)
-	if len(rawSys) > 1000 {
-		rawSys = rawSys[:1000] + "..."
-	}
 	logs = append(logs, fmt.Sprintf("[RAW sysinfo]\n%s", rawSys))
 
 	sysInfo := ParseSysInfo(stripSSHNoise(sysOutput))
@@ -226,9 +223,6 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 		logs = append(logs, "[WARN] feature-key alınamadı: "+err.Error())
 	} else {
 		rawFK := stripANSI(fkOutput)
-		if len(rawFK) > 500 {
-			rawFK = rawFK[:500] + "..."
-		}
 		logs = append(logs, fmt.Sprintf("[RAW feature-key]\n%s", rawFK))
 	}
 
@@ -257,9 +251,6 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 		logs = append(logs, "[WARN] features alınamadı: "+err.Error())
 	} else {
 		rawF := stripANSI(fOutput)
-		if len(rawF) > 500 {
-			rawF = rawF[:500] + "..."
-		}
 		logs = append(logs, fmt.Sprintf("[RAW features]\n%s", rawF))
 		cleanF := stripSSHNoise(stripANSI(fOutput))
 		enrich.Features = ParseShowFeatures(cleanF)
