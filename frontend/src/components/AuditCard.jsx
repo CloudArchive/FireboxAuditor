@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
 
 const severityStyles = {
@@ -23,6 +24,7 @@ const severityStyles = {
 
 export default function AuditCard({ result }) {
   const { t } = useI18n()
+  const [isOpen, setIsOpen] = useState(false)
   const { passed, severity, rule_id, details, points_deducted } = result
   const sev = severityStyles[severity] || severityStyles.medium
 
@@ -34,7 +36,10 @@ export default function AuditCard({ result }) {
 
   if (passed) {
     return (
-      <div className="wg-card p-5 rounded-xl border border-wg-gray-light dark:border-wg-headline/40 bg-white dark:bg-wg-headline/15 flex items-start gap-4">
+      <div 
+        className="wg-card p-5 rounded-xl border border-wg-gray-light dark:border-wg-headline/40 bg-white dark:bg-wg-headline/15 flex items-start gap-4 cursor-pointer hover:bg-wg-gray-light/30 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <div className="text-green-500 text-2xl mt-0.5">✔</div>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
@@ -42,15 +47,23 @@ export default function AuditCard({ result }) {
             <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{t('status.passed')}</span>
             <span className="wg-accent text-sm">|</span>
             <span className="text-xs text-wg-body dark:text-wg-gray-light/50 font-mono">{rule_id}</span>
+            <span className="ml-auto text-wg-body dark:text-wg-gray-light/50 text-xs">
+              {isOpen ? '▲' : '▼'}
+            </span>
           </div>
-          <p className="text-sm text-wg-body dark:text-wg-gray-light/70 mt-1">{description}</p>
+          {isOpen && (
+            <p className="text-sm text-wg-body dark:text-wg-gray-light/70 mt-3 pt-3 border-t border-wg-gray-light/50 dark:border-wg-headline/40">{description}</p>
+          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`wg-card p-5 rounded-xl border ${sev.border} ${sev.bg}`}>
+    <div 
+      className={`wg-card p-5 rounded-xl border ${sev.border} ${sev.bg} cursor-pointer hover:opacity-95 transition-opacity`}
+      onClick={() => setIsOpen(!isOpen)}
+    >
       <div className="flex items-start gap-4">
         <div className="text-2xl mt-0.5">{sev.icon}</div>
         <div className="flex-1">
@@ -65,12 +78,19 @@ export default function AuditCard({ result }) {
             )}
             <span className="wg-accent text-sm">|</span>
             <span className="text-xs text-wg-body dark:text-wg-gray-light/50 font-mono">{rule_id}</span>
+            <span className="ml-auto text-wg-body dark:text-wg-gray-light/50 text-xs">
+              {isOpen ? '▲' : '▼'}
+            </span>
           </div>
-          <p className="text-sm text-wg-body dark:text-wg-gray-light/80 mt-2">{description}</p>
-          <div className="mt-3 p-3 rounded-lg bg-white/60 dark:bg-wg-black/30 border-l-4 border-l-wg-blue dark:border-l-wg-blue">
-            <p className="text-xs text-wg-blue dark:text-blue-300 font-semibold uppercase mb-1">{t('card.howToFix')}</p>
-            <p className="text-sm text-wg-body dark:text-wg-gray-light/80">{remediation}</p>
-          </div>
+          {isOpen && (
+            <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5 cursor-auto" onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm text-wg-body dark:text-wg-gray-light/80 mt-2">{description}</p>
+              <div className="mt-3 p-3 rounded-lg bg-white/60 dark:bg-wg-black/30 border-l-4 border-l-wg-blue dark:border-l-wg-blue opacity-95">
+                <p className="text-xs text-wg-blue dark:text-blue-300 font-semibold uppercase mb-1">{t('card.howToFix')}</p>
+                <p className="text-sm text-wg-body dark:text-wg-gray-light/80">{remediation}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

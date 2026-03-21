@@ -250,6 +250,21 @@ func EnrichFromSSH(cfg SSHConfig) (*EnrichData, []string, error) {
 		enrich.FeatureKey = ParseFeatureKey(clean)
 	}
 
+	// Run show features
+	fOutput, fLogs, err := ExecuteSSHCommand(cfg, "show features")
+	logs = append(logs, fLogs...)
+	if err != nil {
+		logs = append(logs, "[WARN] features alınamadı: "+err.Error())
+	} else {
+		rawF := stripANSI(fOutput)
+		if len(rawF) > 500 {
+			rawF = rawF[:500] + "..."
+		}
+		logs = append(logs, fmt.Sprintf("[RAW features]\n%s", rawF))
+		cleanF := stripSSHNoise(stripANSI(fOutput))
+		enrich.Features = ParseShowFeatures(cleanF)
+	}
+
 	// Fallback: pull serial from feature-key output if sysinfo didn't have it
 	if enrich.SerialNumber == "" && enrich.FeatureKey != nil {
 		for _, line := range splitLines(enrich.FeatureKey.Raw) {

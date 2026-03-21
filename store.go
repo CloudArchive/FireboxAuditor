@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -30,6 +31,7 @@ type EnrichData struct {
 	MemoryUsage  string            `json:"memory_usage"`
 	CPUUsage     string            `json:"cpu_usage"`
 	FeatureKey   *ParsedFeatureKey `json:"feature_key,omitempty"`
+	Features     []LicensedFeature `json:"features,omitempty"`
 	EnrichedAt   time.Time         `json:"enriched_at"`
 	SSHHost      string            `json:"ssh_host,omitempty"`
 	SSHPort      int               `json:"ssh_port,omitempty"`
@@ -45,6 +47,13 @@ type FeatureEntry struct {
 	Name       string `json:"name"`
 	Expiration string `json:"expiration,omitempty"`
 	Active     bool   `json:"active"`
+}
+
+type LicensedFeature struct {
+	Name       string `json:"name"`
+	Capacity   string `json:"capacity"`
+	Status     string `json:"status"`
+	Expiration string `json:"expiration"`
 }
 
 // ── Store ────────────────────────────────────────────────────────────────────
@@ -216,6 +225,51 @@ func ParseFeatureKey(raw string) *ParsedFeatureKey {
 		fk.Features = append(fk.Features, *current)
 	}
 	return fk
+}
+
+func ParseShowFeatures(raw string) []LicensedFeature {
+	var features []LicensedFeature
+	lines := splitLines(raw)
+	
+	inFeatureSection := false
+	for _, line := range lines {
+		trimmed := trimSpace(line)
+		if trimmed == "" || hasPrefix(trimmed, "--") {
+			continue
+		}
+		
+		// Skip header line
+		if hasPrefix(trimmed, "Feature") && strings.Contains(trimmed, "Capacity") && strings.Contains(trimmed, "Status") {
+			inFeatureSection = true
+			continue
+		}
+		
+		if inFeatureSection {
+			// A valid feature line seems to be like: 
+			// ACCESS_PORTAL            0         Enabled   23:59:59PST 12/15/2027
+			// Splitting by multiple spaces should work.
+			parts := strings.Fields(trimmed)
+			if len(parts) >= 4 {
+				// Name is first
+				name := parts[0]
+				// Capacity is second
+				capacity := parts[1]
+				// Status is third
+				status := parts[2]
+				// Expiration is the rest
+				expiration := strings.Join(parts[3:], " ")
+				
+				features = append(features, LicensedFeature{
+					Name:       name,
+					Capacity:   capacity,
+					Status:     status,
+					Expiration: expiration,
+				})
+			}
+		}
+	}
+	
+	return features
 }
 
 // small helpers to avoid importing strings in parser

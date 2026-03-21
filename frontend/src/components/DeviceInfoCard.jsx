@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n/I18nContext'
 
 /* ── Small helpers ──────────────────────────────────────────────────────────── */
@@ -13,13 +14,16 @@ function Row({ label, value, mono = false }) {
   )
 }
 
-function SectionHeader({ icon, title, badge }) {
+function SectionHeader({ icon, title, badge, rightElement }) {
   return (
-    <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center justify-between mb-3 w-full">
       <h3 className="text-xs font-bold text-wg-headline dark:text-white uppercase tracking-wider flex items-center gap-1.5">
         <span>{icon}</span> {title}
       </h3>
-      {badge}
+      <div className="flex items-center gap-2">
+        {badge}
+        {rightElement}
+      </div>
     </div>
   )
 }
@@ -32,7 +36,7 @@ function ConnectedBadge({ label, host, onReconnect, onDisconnect, onShowLogs }) 
       </span>
       {onShowLogs && (
         <button
-          onClick={onShowLogs}
+          onClick={(e) => { e.stopPropagation(); onShowLogs(); }}
           title="SSH loglarını göster"
           className="text-[10px] px-1.5 py-0.5 rounded bg-wg-headline/10 dark:bg-white/10 text-wg-headline dark:text-white/60 hover:bg-wg-headline/20 dark:hover:bg-white/20 transition font-mono border border-wg-headline/20 dark:border-white/10"
         >
@@ -41,7 +45,7 @@ function ConnectedBadge({ label, host, onReconnect, onDisconnect, onShowLogs }) 
       )}
       {onReconnect && (
         <button
-          onClick={onReconnect}
+          onClick={(e) => { e.stopPropagation(); onReconnect(); }}
           title="Yeniden bağlan"
           className="text-[10px] px-1.5 py-0.5 rounded bg-wg-blue/10 text-wg-blue hover:bg-wg-blue/20 transition font-medium border border-wg-blue/20"
         >
@@ -50,7 +54,7 @@ function ConnectedBadge({ label, host, onReconnect, onDisconnect, onShowLogs }) 
       )}
       {onDisconnect && (
         <button
-          onClick={onDisconnect}
+          onClick={(e) => { e.stopPropagation(); onDisconnect(); }}
           title="Bağlantıyı kes"
           className="text-[10px] px-1.5 py-0.5 rounded bg-wg-red/10 text-wg-red hover:bg-wg-red/20 transition font-medium border border-wg-red/20"
         >
@@ -73,7 +77,7 @@ function BlurOverlay({ label, onEnrich }) {
       {/* CTA overlay */}
       <div className="absolute inset-0 flex items-center justify-center">
         <button
-          onClick={onEnrich}
+          onClick={(e) => { e.stopPropagation(); onEnrich(); }}
           className="px-4 py-2 rounded-lg bg-wg-red hover:bg-wg-red-hover text-white text-xs font-semibold shadow-lg transition active:scale-95"
         >
           🔑 {label}
@@ -85,6 +89,7 @@ function BlurOverlay({ label, onEnrich }) {
 
 /* ── Feature Key Section ─────────────────────────────────────────────────────── */
 
+// Fallback for older show feature-key format if show features isn't completely parsed
 function FeatureKeySection({ featureKey, t }) {
   if (!featureKey || !featureKey.features?.length) return null
 
@@ -133,15 +138,51 @@ function FeatureKeySection({ featureKey, t }) {
   )
 }
 
+// New table layout for "show features"
+function LicensedFeaturesTable({ features, t }) {
+  if (!features || !features.length) return null
+  return (
+    <div className="overflow-x-auto w-full">
+      <table className="w-full text-[11px]">
+        <thead>
+          <tr className="text-wg-body dark:text-wg-gray-light/40 text-left border-b border-wg-gray-light/30 dark:border-wg-headline/20">
+            <th className="pb-1 pr-3 font-medium">Feature</th>
+            <th className="pb-1 pr-3 font-medium">Capacity</th>
+            <th className="pb-1 pr-3 font-medium">Status</th>
+            <th className="pb-1 font-medium">Expiration</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-wg-gray-light/30 dark:divide-wg-headline/20">
+          {features.map((f, i) => {
+            const isActive = f.status?.toLowerCase() === 'enabled'
+            return (
+              <tr key={i} className="text-wg-headline dark:text-wg-gray-light/80 hover:bg-wg-gray-light/10 dark:hover:bg-wg-headline/30 transition-colors">
+                <td className="py-1.5 pr-3 font-medium">{f.name}</td>
+                <td className="py-1.5 pr-3 font-mono">{f.capacity}</td>
+                <td className="py-1.5 pr-3">
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-wg-body/10 text-wg-body dark:bg-white/10 dark:text-white/60'}`}>
+                    {f.status}
+                  </span>
+                </td>
+                <td className="py-1.5 font-mono text-[10px]">{f.expiration}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 /* ── Main Component ──────────────────────────────────────────────────────────── */
 
 export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onReconnect, onDisconnect, onShowLogs }) {
   const { t } = useI18n()
-
   const hasEnrich = !!enrichment
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-wg-gray-light dark:border-wg-headline/30 bg-white dark:bg-wg-headline/10 overflow-hidden shadow-sm">
+    <div className="rounded-2xl border border-wg-gray-light dark:border-wg-headline/30 bg-white dark:bg-wg-headline/10 overflow-hidden shadow-sm flex flex-col">
 
       {/* ── Section 1: Device Identity (from XML) ───────────────────── */}
       <div className="px-5 py-4 border-b border-wg-gray-light dark:border-wg-headline/20">
@@ -226,7 +267,10 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onRe
       </div>
 
       {/* ── Section 3: License (Feature Key) ────────────────────────── */}
-      <div className="px-5 py-4">
+      <div 
+        className={`px-5 py-4 transition-colors ${hasEnrich ? 'cursor-pointer hover:bg-wg-gray-light/20 dark:hover:bg-white/5' : ''}`}
+        onClick={() => { if (hasEnrich) setIsLicenseOpen(!isLicenseOpen); }}
+      >
         <SectionHeader
           icon="🔑"
           title={t('device.licenseSection')}
@@ -234,11 +278,29 @@ export default function DeviceInfoCard({ info, enrichment, onEnrichRequest, onRe
             ? <ConnectedBadge label={t('device.sshConnected')} host={enrichment.ssh_host} />
             : null
           }
+          rightElement={hasEnrich ? (
+            <span className="text-wg-body dark:text-wg-gray-light/50 text-xs ml-2">
+              {isLicenseOpen ? '▲' : '▼'}
+            </span>
+          ) : null}
         />
-        {hasEnrich && enrichment.feature_key ? (
-          <FeatureKeySection featureKey={enrichment.feature_key} t={t} />
+        
+        {hasEnrich ? (
+          isLicenseOpen && (
+            <div className="mt-4 pt-4 border-t border-wg-gray-light dark:border-wg-headline/20 cursor-auto" onClick={(e) => e.stopPropagation()}>
+              {enrichment.features?.length > 0 ? (
+                <LicensedFeaturesTable features={enrichment.features} t={t} />
+              ) : enrichment.feature_key ? (
+                <FeatureKeySection featureKey={enrichment.feature_key} t={t} />
+              ) : (
+                <div className="text-sm text-wg-body">No feature key available.</div>
+              )}
+            </div>
+          )
         ) : (
-          <BlurOverlay label={t('device.enrichCta')} onEnrich={onEnrichRequest} />
+          <div className="cursor-auto" onClick={(e) => e.stopPropagation()}>
+            <BlurOverlay label={t('device.enrichCta')} onEnrich={onEnrichRequest} />
+          </div>
         )}
       </div>
     </div>
